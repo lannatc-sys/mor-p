@@ -13,18 +13,21 @@ BASKETBALL = "basketball"
 SOCCER = "soccer"
 BASEBALL = "baseball"
 AMERICAN_FOOTBALL = "football"
+TENNIS = "tennis"
 
 SPORT_NAMES_TH = {
     BASKETBALL: "บาสเกตบอล",
     SOCCER: "ฟุตบอล",
     BASEBALL: "เบสบอล",
     AMERICAN_FOOTBALL: "อเมริกันฟุตบอล",
+    TENNIS: "เทนนิส",
 }
 
 # โมเดลการกระจายของสกอร์รวม
 NORMAL = "normal"      # คะแนนเยอะ (บาส, อเมริกันฟุตบอล) -> แจกแจงปกติ
 POISSON = "poisson"    # ประตูฟุตบอล -> ปัวซองต่อทีม
 NEGBIN = "negbin"      # รันเบสบอล -> ทวินามลบ (กระจายมากกว่าปัวซอง)
+MARKOV = "tennis"      # เทนนิส -> ลูกโซ่มาร์คอฟ แต้ม/เกม/เซต
 
 
 @dataclass(frozen=True)
@@ -44,19 +47,20 @@ class League:
     scoreboard_params: dict = field(default_factory=dict)
     history_slug: str = ""   # ดึงผลย้อนหลังของทีมจากลีกนี้แทน เช่น "all" = ทุกรายการ
     provider: str = "espn"   # แหล่งข้อมูล: espn / euroleague (API ทางการของยูโรลีก)
+    margin_sd: float = 0.0   # ส่วนเบี่ยงเบนมาตรฐานของผลต่างคะแนน (ใช้หาผู้ชนะ, โมเดล normal)
 
     @property
     def unit_th(self) -> str:
-        return {SOCCER: "ประตู", BASEBALL: "รัน"}.get(self.sport, "แต้ม")
+        return {SOCCER: "ประตู", BASEBALL: "รัน", TENNIS: "เกม"}.get(self.sport, "แต้ม")
 
     @property
     def sport_th(self) -> str:
         return SPORT_NAMES_TH[self.sport]
 
 
-def _bb(key, slug, name, avg, sd, home=0.012, step=5.0, params=None):
+def _bb(key, slug, name, avg, sd, home=0.012, step=5.0, params=None, margin=12.5):
     return League(key, BASKETBALL, slug, name, NORMAL, avg, total_sd=sd, home_adv=home,
-                  line_step=step, prior_games=4.0, scoreboard_params=params or {})
+                  line_step=step, prior_games=4.0, scoreboard_params=params or {}, margin_sd=margin)
 
 
 def _fb(key, slug, name, avg=1.38, home=0.10, history=""):
@@ -64,24 +68,24 @@ def _fb(key, slug, name, avg=1.38, home=0.10, history=""):
                   default_lines=(1.5, 2.5, 3.5), history_slug=history)
 
 
-def _af(key, slug, name, avg, sd, params=None):
+def _af(key, slug, name, avg, sd, params=None, margin=13.5):
     return League(key, AMERICAN_FOOTBALL, slug, name, NORMAL, avg, total_sd=sd, home_adv=0.025,
-                  line_step=3.0, prior_games=3.0, scoreboard_params=params or {})
+                  line_step=3.0, prior_games=3.0, scoreboard_params=params or {}, margin_sd=margin)
 
 
 LEAGUES: dict[str, League] = {lg.key: lg for lg in [
     # บาสเกตบอล
     _bb("nba", "nba", "NBA", 114.5, 18.0),
-    _bb("wnba", "wnba", "WNBA", 82.0, 15.0),
+    _bb("wnba", "wnba", "WNBA", 82.0, 15.0, margin=11.0),
     # ยูโรลีก/ยูโรคัพ ดึงจาก API ทางการ (api-live.euroleague.net) — slug คือรหัสรายการ E / U
     League("euroleague", BASKETBALL, "E", "ยูโรลีก", NORMAL, 86.5, total_sd=15.0, home_adv=0.018,
-           line_step=5.0, prior_games=4.0, provider="euroleague"),
+           line_step=5.0, prior_games=4.0, provider="euroleague", margin_sd=11.5),
     League("eurocup", BASKETBALL, "U", "ยูโรคัพ", NORMAL, 83.5, total_sd=15.5, home_adv=0.018,
-           line_step=5.0, prior_games=4.0, provider="euroleague"),
+           line_step=5.0, prior_games=4.0, provider="euroleague", margin_sd=12.0),
     _bb("ncaab", "mens-college-basketball", "NCAA บาสชาย", 72.5, 15.5, home=0.02,
-        params={"groups": "50", "limit": "400"}),
+        params={"groups": "50", "limit": "400"}, margin=11.0),
     _bb("ncaaw", "womens-college-basketball", "NCAA บาสหญิง", 66.0, 15.0, home=0.02,
-        params={"groups": "50", "limit": "400"}),
+        params={"groups": "50", "limit": "400"}, margin=12.0),
     # ฟุตบอล
     _fb("epl", "eng.1", "พรีเมียร์ลีก อังกฤษ", 1.42),
     _fb("championship", "eng.2", "แชมเปียนชิพ อังกฤษ", 1.30),
@@ -104,8 +108,11 @@ LEAGUES: dict[str, League] = {lg.key: lg for lg in [
            dispersion=3.0, prior_games=6.0, default_lines=(10.5, 12.5, 14.5)),
     # อเมริกันฟุตบอล
     _af("nfl", "nfl", "NFL", 22.5, 13.5),
+    # เทนนิส: team_avg = โอกาสได้แต้มเมื่อเสิร์ฟ (ค่าเฉลี่ยทัวร์)
+    League("atp", TENNIS, "atp", "ATP Tour", MARKOV, 0.64, provider="espn_tennis", prior_games=20.0),
+    League("wta", TENNIS, "wta", "WTA Tour", MARKOV, 0.565, provider="espn_tennis", prior_games=20.0),
     _af("ncaaf", "college-football", "NCAA อเมริกันฟุตบอล", 28.0, 16.5,
-        params={"groups": "80", "limit": "300"}),
+        params={"groups": "80", "limit": "300"}, margin=16.0),
 ]}
 
 

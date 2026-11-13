@@ -139,6 +139,29 @@ def _markets(comp: dict) -> list[MarketTotal]:
     return out
 
 
+def _moneyline(comp: dict):
+    from .winner import Moneyline
+    for o in comp.get("odds") or []:
+        ml = o.get("moneyline") or {}
+        vals = {}
+        for side in ("home", "away", "draw"):
+            node = ml.get(side) or {}
+            v = None
+            for phase in ("close", "current", "open"):
+                v = parse_american((node.get(phase) or {}).get("odds"))
+                if v is not None:
+                    break
+            if v is None and side != "draw":
+                v = parse_american((o.get(f"{side}TeamOdds") or {}).get("moneyLine"))
+            if v is None and side == "draw":
+                v = parse_american((o.get("drawOdds") or {}).get("moneyLine"))
+            vals[side] = v
+        if vals["home"] is not None and vals["away"] is not None:
+            return Moneyline((o.get("provider") or {}).get("name") or "ไม่ระบุ",
+                             vals["home"], vals["away"], vals["draw"])
+    return None
+
+
 def parse_scoreboard(data: dict, league_key: str) -> list[Match]:
     matches = []
     for ev in data.get("events") or []:
@@ -163,6 +186,7 @@ def parse_scoreboard(data: dict, league_key: str) -> list[Match]:
                 away=_team(away),
                 venue=((comp.get("venue") or {}).get("fullName") or ""),
                 markets=_markets(comp),
+                moneyline=_moneyline(comp),
                 home_score=parse_score(home.get("score")),
                 away_score=parse_score(away.get("score")),
             ))
@@ -275,6 +299,11 @@ class ESPNClient:
                 from .euroleague import EuroLeagueSource
                 self._euroleague = EuroLeagueSource(self)
             return self._euroleague
+        if league.provider == "espn_tennis":
+            if not hasattr(self, "_tennis"):
+                from .tennis import TennisSource
+                self._tennis = TennisSource(self)
+            return self._tennis
         return None
 
     def scoreboard(self, league: League, day: date | None = None, days: int = 1) -> list[Match]:

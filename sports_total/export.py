@@ -22,7 +22,7 @@ US_EAST = timezone(timedelta(hours=-5))
 DEFAULT_PLAN = {
     "nba": 2, "euroleague": 7, "eurocup": 7, "nfl": 7, "ncaaf": 7, "mlb": 2,
     "epl": 10, "laliga": 10, "seriea": 10, "bundesliga": 10, "ligue1": 10,
-    "ucl": 14, "uel": 14, "nations": 7, "thaileague": 10, "jleague": 10,
+    "ucl": 14, "uel": 14, "nations": 7, "thaileague": 10, "jleague": 10, "atp": 3, "wta": 3,
 }
 
 
@@ -73,6 +73,7 @@ def match_doc(a: Analysis) -> dict:
         "main": _line(a.main), "line_source": a.line_source,
         "pick": a.pick, "strength": a.strength, "quality": a.data_quality,
         "notes": a.notes, "extras": a.extras,
+        "winner": a.winner.to_doc() if a.winner else None,
     }
 
 
@@ -80,11 +81,15 @@ def export_league(client, key: str, days: int, last_n: int = 10, log=None) -> di
     lg = get_league(key)
     today = datetime.now(US_EAST).date()
     matches = [m for m in client.scoreboard(lg, today, days) if m.is_pregame]
-    an = TotalAnalyzer(lg, client, last_n=last_n)
+    if lg.sport == "tennis":
+        from .tennis import TennisAnalyzer, to_doc
+        an, conv = TennisAnalyzer(lg, client), to_doc
+    else:
+        an, conv = TotalAnalyzer(lg, client, last_n=last_n), match_doc
     docs = []
     for m in matches:
         try:
-            docs.append(match_doc(an.analyze(m)))
+            docs.append(conv(an.analyze(m)))
         except FetchError as e:
             if log:
                 log(f"  ข้าม {m.away.name} @ {m.home.name}: {e}")

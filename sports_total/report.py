@@ -117,10 +117,34 @@ def render(a: Analysis) -> str:
     else:
         out.append(f"สรุป: ไม่มีไลน์อ้างอิง — โมเดลคาดสกอร์รวม {a.total:.1f} {u} "
                    "(กำหนดไลน์ด้วย --line เพื่อดูคำแนะนำ)")
+    if a.winner is not None:
+        out.append("-" * 72)
+        out.extend(render_winner(a.winner, {"home": m.home.name, "away": m.away.name, "draw": "เสมอ"}))
     out.append(f"ความน่าเชื่อถือของข้อมูล: {a.data_quality}")
     for n in a.notes:
         out.append(f" ⚠ {n}")
     return "\n".join(out)
+
+
+def render_winner(w, names: dict) -> list[str]:
+    order = [k for k in ("home", "draw", "away") if k in w.model]
+    fmtp = lambda d: " / ".join(f"{names[k]} {d[k]:.1%}" for k in order)
+    out = ["ผู้ชนะ", f"   โมเดล: {fmtp(w.model)}"]
+    if w.market is not None:
+        odds = " / ".join(f"{names[k]} {fmt_odds(w.odds[k])}" for k in order)
+        out.append(f"   ราคา ({w.source}): {odds}  → ตลาด (ตัดค่าน้ำ) {fmtp(w.market)}")
+        out.append(f"   ใช้ตัดสิน (ผสมกับตลาด): {fmtp(w.prob)}")
+        out.append("   edge: " + " / ".join(f"{names[k]} {w.edges[k]:+.1%}" for k in order))
+        if w.pick:
+            out.append(f"สรุปผู้ชนะ: {w.strength} {names[w.pick]} (ราคา {fmt_odds(w.odds[w.pick])},"
+                       f" โอกาส {w.prob[w.pick]:.1%})")
+        else:
+            out.append("สรุปผู้ชนะ: ผ่าน — ราคาสอดคล้องกับโอกาสแล้ว")
+    else:
+        fav = w.favorite
+        out.append(f"สรุปผู้ชนะ: โมเดลให้ {names[fav]} มีโอกาสมากกว่า ({w.prob[fav]:.1%}) — "
+                   "ไม่มีราคาเจ้ามือ ใส่ --ml-home/--ml-away เพื่อเทียบราคา")
+    return out
 
 
 def render_summary(analyses: list[Analysis]) -> str:
@@ -131,8 +155,15 @@ def render_summary(analyses: list[Analysis]) -> str:
         m = a.match
         line = f"{a.main.line:g}" if a.main else "-"
         pick = f"{a.strength} {PICK_TH[a.pick]}" if a.pick else (a.strength if a.main else "ไม่มีไลน์")
+        wn = ""
+        if a.winner is not None:
+            names = {"home": m.home.abbr or m.home.name, "away": m.away.abbr or m.away.name, "draw": "เสมอ"}
+            f = a.winner.favorite
+            wn = f" | ชนะ: {names[f]} {a.winner.prob[f]:.0%}"
+            if a.winner.pick:
+                wn += f" ({a.winner.strength} {names[a.winner.pick]})"
         rows.append(f"{m.away.abbr or m.away.name} @ {m.home.abbr or m.home.name}: "
-                    f"คาด {a.total:.1f} | ไลน์ {line} | {pick} | ข้อมูล{a.data_quality}")
+                    f"คาด {a.total:.1f} | ไลน์ {line} | {pick}{wn} | ข้อมูล{a.data_quality}")
     return "\n".join(rows)
 
 

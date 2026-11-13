@@ -51,6 +51,13 @@ def parse_date(s: str | None) -> date | None:
     raise argparse.ArgumentTypeError(f"รูปแบบวันที่ไม่ถูกต้อง: {s} (ใช้ YYYY-MM-DD)")
 
 
+def _user_moneyline(args):
+    from .winner import Moneyline
+    if getattr(args, "ml_home", None) is None or getattr(args, "ml_away", None) is None:
+        return None
+    return Moneyline("กำหนดเอง", args.ml_home, args.ml_away, args.ml_draw)
+
+
 def _team_match(m: Match, q: str) -> bool:
     q = q.lower()
     return any(q in (x or "").lower() for x in (m.home.name, m.away.name, m.home.abbr, m.away.abbr))
@@ -65,7 +72,7 @@ def cmd_leagues(args) -> int:
     for sport, lgs in by_sport.items():
         print(f"\n{SPORT_NAMES_TH[sport]}")
         for lg in lgs:
-            src = "EuroLeague API" if lg.provider == "euroleague" else f"ESPN: {lg.sport}/{lg.slug}"
+            src = {"euroleague": "EuroLeague API"}.get(lg.provider, f"ESPN: {lg.sport}/{lg.slug}")
             print(f"  {lg.key:<13} {lg.name_th}  ({src})")
     print("\nลีกฟุตบอลอื่นของ ESPN: ใช้ soccer:<รหัส> เช่น soccer:por.1, soccer:sco.1")
     return 0
@@ -102,16 +109,30 @@ def _run_analysis(args, client, league: League, matches: list[Match]) -> int:
         print("ไม่พบนัดที่ยังไม่เริ่มให้วิเคราะห์")
         return 1
 
-    analyzer = TotalAnalyzer(league, client, last_n=args.last, half_life=args.half_life,
-                             league_avg=args.league_avg, model_weight=args.model_weight)
+    if league.sport == "tennis":
+        from .tennis import TennisAnalyzer
+        analyzer = TennisAnalyzer(league, client, model_weight=args.model_weight)
+    else:
+        analyzer = TotalAnalyzer(league, client, last_n=args.last, half_life=args.half_life,
+                                 league_avg=args.league_avg, model_weight=args.model_weight)
     results = []
     for m in matches:
         try:
             results.append(analyzer.analyze(m, line=args.line, over_odds=args.over_odds,
-                                            under_odds=args.under_odds))
+                                            under_odds=args.under_odds,
+                                            moneyline=_user_moneyline(args)))
         except FetchError as e:
             print(f"ข้าม {m.away.name} @ {m.home.name}: {e}", file=sys.stderr)
 
+    if league.sport == "tennis":
+        from .tennis import render as t_render, to_doc
+        if args.json:
+            print(json.dumps([to_doc(a) for a in results], ensure_ascii=False, indent=2))
+            return 0
+        for a in results:
+            print(t_render(a))
+        print("\n" + DISCLAIMER)
+        return 0
     if args.json:
         print(json.dumps([a.to_dict() for a in results], ensure_ascii=False, indent=2))
         return 0
@@ -156,7 +177,8 @@ def cmd_manual(args) -> int:
     hf = TeamForm.manual(home, args.home_for, args.home_against, args.games)
     af = TeamForm.manual(away, args.away_for, args.away_against, args.games)
     a = TotalAnalyzer(league, league_avg=args.league_avg).evaluate(
-        match, hf, af, line=args.line, over_odds=args.over_odds, under_odds=args.under_odds)
+        match, hf, af, line=args.line, over_odds=args.over_odds, under_odds=args.under_odds,
+        moneyline=_user_moneyline(args))
     if args.json:
         print(json.dumps(a.to_dict(), ensure_ascii=False, indent=2))
     else:
@@ -189,6 +211,9 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--over-odds", type=float, help="ราคาฝั่งสูงแบบอเมริกัน เช่น -110")
         sp.add_argument("--under-odds", type=float, help="ราคาฝั่งต่ำแบบอเมริกัน เช่น -110")
         sp.add_argument("--league-avg", type=float, help="คะแนนเฉลี่ยต่อทีมต่อเกมของลีก (แทนค่าตั้งต้น)")
+        sp.add_argument("--ml-home", type=float, help="ราคาผู้ชนะ (moneyline) ทีมเหย้า เช่น -150")
+        sp.add_argument("--ml-away", type=float, help="ราคาผู้ชนะ ทีมเยือน เช่น +130")
+        sp.add_argument("--ml-draw", type=float, help="ราคาเสมอ (ฟุตบอล)")
         sp.add_argument("--model-weight", type=float, default=0.4,
                         help="น้ำหนักของโมเดลเมื่อมีไลน์เจ้ามือ 0-1 (ค่าเริ่มต้น 0.4, 1 = ใช้โมเดลล้วน)")
         sp.add_argument("--json", action="store_true", help="แสดงผลเป็น JSON")

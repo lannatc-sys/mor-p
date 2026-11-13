@@ -37,6 +37,8 @@ class Match:
     markets: list[MarketTotal] = field(default_factory=list)
     home_score: float | None = None
     away_score: float | None = None
+    moneyline: "object | None" = None   # winner.Moneyline
+    info: dict = field(default_factory=dict)   # ข้อมูลเฉพาะกีฬา เช่น เทนนิส: รายการ, รอบ, จำนวนเซต
 
     @property
     def is_pregame(self) -> bool:

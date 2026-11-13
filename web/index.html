@@ -118,7 +118,9 @@ details.match[open] > summary { border-bottom: 1px dashed var(--line); }
 .lineline { font-size: 12px; color: var(--muted); }
 .lineline b { color: var(--ink); font-family: var(--font-display); }
 
-.body { padding: 12px 14px 16px; display: grid; gap: 16px; }
+.body { padding: 12px 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.body > *, .card > * { min-width: 0; }
+details.match > summary > * { min-width: 0; }
 .sec h3 { margin: 0 0 8px; font-size: 12.5px; font-weight: 600; color: var(--muted); letter-spacing: .04em; }
 .tablewrap { overflow-x: auto; }
 table.form { width: 100%; border-collapse: collapse; font-size: 13.5px; }
@@ -165,6 +167,17 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
 .verdict small { color: var(--muted); font-size: 12.5px; }
 
 .extras { display: grid; gap: 8px; font-size: 13.5px; }
+.wrow { display: grid; grid-template-columns: minmax(0, 1fr) 76px; gap: 6px 10px; align-items: center; }
+.wrow .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; }
+.wrow .track { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.wrow .track i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.wrow .pp { text-align: right; font-family: var(--font-display); font-weight: 600; }
+.wrow .sub { grid-column: 1 / -1; font-size: 12px; color: var(--muted); margin-top: -2px; }
+.wrow input { width: 76px; height: 32px; border: 1px solid var(--line); border-radius: 8px; text-align: center; background: var(--surface); font-family: var(--font-display); }
+.winlist { display: grid; gap: 12px; }
+.pill.win { background: var(--surface-2); color: var(--ink); }
+.pill.win.lean { background: var(--accent); color: var(--accent-ink); opacity: .85; }
+.pill.win.strong { background: var(--accent); color: var(--accent-ink); }
 .wdl { display: flex; height: 24px; border-radius: 6px; overflow: hidden; font-size: 12px; font-family: var(--font-display); font-weight: 600; }
 .wdl > div { display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; }
 .wdl .h { background: var(--accent); color: var(--accent-ink); }
@@ -189,7 +202,7 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
 .banner { background: var(--warn-soft); border-radius: 10px; padding: 9px 12px; font-size: 13px; }
 
 /* manual */
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 420px) { .grid2 { grid-template-columns: 1fr; } }
 .field { display: grid; gap: 4px; min-width: 0; }
@@ -236,6 +249,14 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
         <label for="m-league">ลีก</label>
         <select id="m-league"></select>
       </div>
+      <div id="m-tennisFields" class="grid2" hidden>
+        <div class="field"><label for="m-p1">ผู้เล่น 1</label><input id="m-p1" value="ผู้เล่น 1"></div>
+        <div class="field"><label for="m-p2">ผู้เล่น 2</label><input id="m-p2" value="ผู้เล่น 2"></div>
+        <div class="field"><label for="m-pw">โอกาสชนะของผู้เล่น 1 (%)</label><input class="num" id="m-pw" type="number" min="2" max="98" step="1" value="60" inputmode="decimal"></div>
+        <div class="field"><label for="m-bo">รูปแบบ</label><select id="m-bo"><option value="3">แข่ง 3 เซต (ชนะ 2)</option><option value="5">แข่ง 5 เซต (ชนะ 3)</option></select></div>
+        <div class="src" style="grid-column:1/-1">ไม่รู้โอกาสชนะ? ใส่ราคาผู้ชนะจากเจ้ามือในส่วน "ผู้ชนะ" ด้านล่าง แล้วกด "ใช้โอกาสจากราคา"</div>
+      </div>
+      <div id="m-teamFields">
       <div class="grid2">
         <div class="teambox">
           <h4>ทีมเหย้า</h4>
@@ -258,6 +279,7 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
         <label for="m-n">จำนวนนัดที่ใช้คิดค่าเฉลี่ย</label>
         <input class="num" id="m-n" type="number" min="1" max="82" value="10" inputmode="numeric">
       </div>
+      </div>
     </form>
     <div class="card" id="manualResult"></div>
     <p class="disclaimer">ใส่ตัวเลขจากเว็บสถิติที่คุณใช้ ระบบจะปรับค่าเข้าหาค่าเฉลี่ยลีกเมื่อจำนวนนัดน้อย</p>
@@ -270,16 +292,22 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
 
   // ---------------------------------------------------------------- config
   // [ชื่อ, กีฬา, โมเดล, ค่าเฉลี่ยต่อทีม, SD สกอร์รวม, ได้เปรียบเจ้าบ้าน, dispersion, prior, ระยะไลน์, ไลน์มาตรฐาน]
-  const LEAGUES = {"nba":["NBA","basketball","normal",114.5,18,0.012,0,4,5,[]],"wnba":["WNBA","basketball","normal",82,15,0.012,0,4,5,[]],"euroleague":["ยูโรลีก","basketball","normal",86.5,15,0.018,0,4,5,[]],"eurocup":["ยูโรคัพ","basketball","normal",83.5,15.5,0.018,0,4,5,[]],"ncaab":["NCAA บาสชาย","basketball","normal",72.5,15.5,0.02,0,4,5,[]],"ncaaw":["NCAA บาสหญิง","basketball","normal",66,15,0.02,0,4,5,[]],"epl":["พรีเมียร์ลีก อังกฤษ","soccer","poisson",1.42,0,0.1,0,6,0,[1.5,2.5,3.5]],"championship":["แชมเปียนชิพ อังกฤษ","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5]],"laliga":["ลาลีกา สเปน","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5]],"seriea":["เซเรียอา อิตาลี","soccer","poisson",1.35,0,0.1,0,6,0,[1.5,2.5,3.5]],"bundesliga":["บุนเดสลีกา เยอรมนี","soccer","poisson",1.55,0,0.1,0,6,0,[1.5,2.5,3.5]],"ligue1":["ลีกเอิง ฝรั่งเศส","soccer","poisson",1.4,0,0.1,0,6,0,[1.5,2.5,3.5]],"eredivisie":["เอเรอดิวิซี เนเธอร์แลนด์","soccer","poisson",1.55,0,0.1,0,6,0,[1.5,2.5,3.5]],"ucl":["ยูฟ่า แชมเปียนส์ลีก","soccer","poisson",1.5,0,0.08,0,6,0,[1.5,2.5,3.5]],"uel":["ยูฟ่า ยูโรปาลีก","soccer","poisson",1.4,0,0.08,0,6,0,[1.5,2.5,3.5]],"nations":["ยูฟ่า เนชั่นส์ลีก","soccer","poisson",1.3,0,0.08,0,6,0,[1.5,2.5,3.5]],"mls":["MLS สหรัฐฯ","soccer","poisson",1.5,0,0.1,0,6,0,[1.5,2.5,3.5]],"jleague":["เจลีก ญี่ปุ่น","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5]],"thaileague":["ไทยลีก 1","soccer","poisson",1.4,0,0.1,0,6,0,[1.5,2.5,3.5]],"mlb":["MLB","baseball","negbin",4.45,0,0.02,3.8,8,0,[7.5,8.5,9.5]],"ncaabase":["NCAA เบสบอล","baseball","negbin",6.5,0,0.03,3,6,0,[10.5,12.5,14.5]],"nfl":["NFL","football","normal",22.5,13.5,0.025,0,3,3,[]],"ncaaf":["NCAA อเมริกันฟุตบอล","football","normal",28,16.5,0.025,0,3,3,[]]};
-  const LG = k => { const a = LEAGUES[k]; return a && { key: k, name: a[0], sport: a[1], model: a[2], avg: a[3], sd: a[4], home: a[5], disp: a[6], prior: a[7], step: a[8], lines: a[9] }; };
+  const LEAGUES = {"nba":["NBA","basketball","normal",114.5,18,0.012,0,4,5,[],12.5],"wnba":["WNBA","basketball","normal",82,15,0.012,0,4,5,[],11],"euroleague":["ยูโรลีก","basketball","normal",86.5,15,0.018,0,4,5,[],11.5],"eurocup":["ยูโรคัพ","basketball","normal",83.5,15.5,0.018,0,4,5,[],12],"ncaab":["NCAA บาสชาย","basketball","normal",72.5,15.5,0.02,0,4,5,[],11],"ncaaw":["NCAA บาสหญิง","basketball","normal",66,15,0.02,0,4,5,[],12],"epl":["พรีเมียร์ลีก อังกฤษ","soccer","poisson",1.42,0,0.1,0,6,0,[1.5,2.5,3.5],0],"championship":["แชมเปียนชิพ อังกฤษ","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5],0],"laliga":["ลาลีกา สเปน","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5],0],"seriea":["เซเรียอา อิตาลี","soccer","poisson",1.35,0,0.1,0,6,0,[1.5,2.5,3.5],0],"bundesliga":["บุนเดสลีกา เยอรมนี","soccer","poisson",1.55,0,0.1,0,6,0,[1.5,2.5,3.5],0],"ligue1":["ลีกเอิง ฝรั่งเศส","soccer","poisson",1.4,0,0.1,0,6,0,[1.5,2.5,3.5],0],"eredivisie":["เอเรอดิวิซี เนเธอร์แลนด์","soccer","poisson",1.55,0,0.1,0,6,0,[1.5,2.5,3.5],0],"ucl":["ยูฟ่า แชมเปียนส์ลีก","soccer","poisson",1.5,0,0.08,0,6,0,[1.5,2.5,3.5],0],"uel":["ยูฟ่า ยูโรปาลีก","soccer","poisson",1.4,0,0.08,0,6,0,[1.5,2.5,3.5],0],"nations":["ยูฟ่า เนชั่นส์ลีก","soccer","poisson",1.3,0,0.08,0,6,0,[1.5,2.5,3.5],0],"mls":["MLS สหรัฐฯ","soccer","poisson",1.5,0,0.1,0,6,0,[1.5,2.5,3.5],0],"jleague":["เจลีก ญี่ปุ่น","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5],0],"thaileague":["ไทยลีก 1","soccer","poisson",1.4,0,0.1,0,6,0,[1.5,2.5,3.5],0],"mlb":["MLB","baseball","negbin",4.45,0,0.02,3.8,8,0,[7.5,8.5,9.5],0],"ncaabase":["NCAA เบสบอล","baseball","negbin",6.5,0,0.03,3,6,0,[10.5,12.5,14.5],0],"nfl":["NFL","football","normal",22.5,13.5,0.025,0,3,3,[],13.5],"atp":["ATP Tour","tennis","tennis",0.64,0,0,0,20,0,[],0],"wta":["WTA Tour","tennis","tennis",0.565,0,0,0,20,0,[],0],"ncaaf":["NCAA อเมริกันฟุตบอล","football","normal",28,16.5,0.025,0,3,3,[],16]};
+  // ทัวร์เทนนิสที่ไม่มีข้อมูลอัตโนมัติ ใช้ได้ในแท็บคำนวณเอง (ใช้ค่าของทัวร์หลักที่ใกล้เคียง)
+  LEAGUES.challenger = ["ATP Challenger (คำนวณเอง)", "tennis", "tennis", 0.635, 0, 0, 0, 20, 2, [], 0];
+  LEAGUES.wta125 = ["WTA 125 (คำนวณเอง)", "tennis", "tennis", 0.56, 0, 0, 0, 20, 2, [], 0];
+  // ค่าปรับเทียบเทนนิส (ตรงกับ sports_total/tennis.py): ขยายความต่างฝีมือ x1.5 แล้วเลื่อนจำนวนเกม
+  const TENNIS_DMULT = 1.5, TENNIS_SHIFT = { atp: -2, wta: -2.5, challenger: -2, wta125: -2.5 };
+  const LG = k => { const a = LEAGUES[k]; return a && { key: k, name: a[0], sport: a[1], model: a[2], avg: a[3], sd: a[4], home: a[5], disp: a[6], prior: a[7], step: a[8], lines: a[9], margin: a[10] || 0 }; };
   const SPORTS = [
     { key: "all", label: "ทั้งหมด" },
     { key: "basketball", label: "บาสเกตบอล" },
     { key: "soccer", label: "ฟุตบอล" },
     { key: "baseball", label: "เบสบอล" },
     { key: "football", label: "อเมริกันฟุตบอล" },
+    { key: "tennis", label: "เทนนิส" },
   ];
-  const UNIT = { soccer: "ประตู", baseball: "รัน", basketball: "แต้ม", football: "แต้ม" };
+  const UNIT = { soccer: "ประตู", baseball: "รัน", basketball: "แต้ม", football: "แต้ม", tennis: "เกม" };
   const DEFAULT_ODDS = -110, LEAN = 0.03, STRONG = 0.06;
 
   // ---------------------------------------------------------------- stats
@@ -340,11 +368,113 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
     return lg.model === "poisson" ? makeDist(k => poisson(k, mu), 25) : makeDist(k => negbin(k, mu, lg.disp * 2), 60);
   }
   const MODEL_WEIGHT = 0.4;
+
+  // ---- เทนนิส: ลูกโซ่มาร์คอฟ แต้ม -> เกม -> เซต -> แมตช์ (เหมือน sports_total/tennis_model.py)
+  function holdProb(p) { const q = 1 - p; return p ** 4 * (1 + 4 * q + 10 * q * q) + 20 * p ** 3 * q ** 3 * (p * p / (1 - 2 * p * q)); }
+  function tiebreakProb(pa, pb) {
+    const tie = pa * (1 - pb) / (pa * (1 - pb) + (1 - pa) * pb), memo = {};
+    const f = (a, b) => {
+      if (a === 7 && b <= 5) return 1; if (b === 7 && a <= 5) return 0; if (a === 6 && b === 6) return tie;
+      const key = a * 10 + b; if (key in memo) return memo[key];
+      const p = (a + b) % 4 === 0 || (a + b) % 4 === 3 ? pa : 1 - pb;
+      return (memo[key] = p * f(a + 1, b) + (1 - p) * f(a, b + 1));
+    };
+    return f(0, 0);
+  }
+  const setMemo = new Map();
+  function setOutcomes(pa, pb, aFirst) {
+    const key = pa.toFixed(5) + "|" + pb.toFixed(5) + "|" + aFirst;
+    if (setMemo.has(key)) return setMemo.get(key);
+    const ha = holdProb(pa), hb = holdProb(pb), dp = new Map([["0,0", 1]]), out = [];
+    for (let g = 0; g <= 12; g++) for (let ga = 0; ga <= g; ga++) {
+      const gb = g - ga, pr = dp.get(ga + "," + gb); if (!pr) continue;
+      if ((ga >= 6 || gb >= 6) && Math.abs(ga - gb) >= 2) { out.push([ga, gb, pr]); continue; }
+      if (ga === 6 && gb === 6) {
+        const ptb = aFirst ? tiebreakProb(pa, pb) : 1 - tiebreakProb(pb, pa);
+        out.push([7, 6, pr * ptb], [6, 7, pr * (1 - ptb)]); continue;
+      }
+      const aServes = (g % 2 === 0) === aFirst, pw = aServes ? ha : 1 - hb;
+      const add = (k, v) => dp.set(k, (dp.get(k) || 0) + v);
+      add((ga + 1) + "," + gb, pr * pw); add(ga + "," + (gb + 1), pr * (1 - pw));
+    }
+    setMemo.set(key, out); return out;
+  }
+  function matchResult(pa, pb, bestOf) {
+    const need = (bestOf + 1) / 2, so = { true: setOutcomes(pa, pb, true), false: setOutcomes(pa, pb, false) };
+    let states = new Map([["0,0,true", { sa: 0, sb: 0, first: true, dist: new Map([[0, 0.5]]) }], ["0,0,false", { sa: 0, sb: 0, first: false, dist: new Map([[0, 0.5]]) }]]);
+    const total = new Map(), sets = {}; let pA = 0, ega = 0, egb = 0;
+    for (let k = 0; k < 2 * need - 1; k++) {
+      for (const [key, st] of [...states]) {
+        if (st.sa + st.sb !== k) continue;
+        states.delete(key);
+        let mass = 0; st.dist.forEach(v => { mass += v; });
+        for (const [ga, gb, p] of so[st.first]) {
+          ega += mass * p * ga; egb += mass * p * gb;
+          const t = ga + gb, nf = t % 2 === 0 ? st.first : !st.first, nsa = st.sa + (ga > gb), nsb = st.sb + (gb > ga);
+          let target;
+          if (nsa === need || nsb === need) {
+            target = total; sets[nsa + "-" + nsb] = (sets[nsa + "-" + nsb] || 0) + mass * p; if (nsa === need) pA += mass * p;
+          } else {
+            const nk = nsa + "," + nsb + "," + nf;
+            if (!states.has(nk)) states.set(nk, { sa: nsa, sb: nsb, first: nf, dist: new Map() });
+            target = states.get(nk).dist;
+          }
+          st.dist.forEach((q, tot) => target.set(tot + t, (target.get(tot + t) || 0) + q * p));
+        }
+      }
+    }
+    const size = Math.max(...total.keys()) + 1, dist = [];
+    for (let i = 0; i < size; i++) dist.push(total.get(i) || 0);
+    return { pA, dist, sets, ega, egb };
+  }
+  const gamesPerSet = p => setOutcomes(p, p, true).reduce((s, [ga, gb, pr]) => s + (ga + gb) * pr, 0);
+  function bisect(f, lo, hi, target, it = 30) { for (let i = 0; i < it; i++) { const mid = (lo + hi) / 2; if (f(mid) < target) lo = mid; else hi = mid; } return (lo + hi) / 2; }
+  function solveTennis(pWinBo3, gps, bestOf) {
+    const base = bisect(gamesPerSet, 0.5, 0.8, Math.min(Math.max(gps, 9), 11.5));
+    const span = Math.min(base - 0.35, 0.95 - base, 0.2), p = Math.min(Math.max(pWinBo3, 0.02), 0.98);
+    const d = bisect(x => matchResult(base + x, base - x, 3).pA, -span, span, p);
+    return { base, d, win: matchResult(base + d, base - d, bestOf) };
+  }
+  // จำนวนเกมรวมหลังปรับเทียบ (เซตขาดลอยบ่อยกว่าโมเดลแต้มอิสระ)
+  function tennisTotals(sol, bestOf, shift) {
+    const lim = Math.min(sol.base - 0.36, 0.94 - sol.base);
+    const d = Math.max(Math.min(sol.d * TENNIS_DMULT, lim), -lim);
+    const r = matchResult(sol.base + d, sol.base - d, bestOf), dist = shiftDist(r.dist, shift);
+    return { dist, total: distMean(dist), sets: r.sets, ega: r.ega + shift / 2, egb: r.egb + shift / 2 };
+  }
+  function shiftDist(dist, delta) {
+    const n = dist.length + Math.floor(Math.abs(delta)) + 2, out = new Array(n).fill(0);
+    dist.forEach((p, k) => { const x = k + delta, lo = Math.floor(x), fr = x - lo;
+      [[lo, 1 - fr], [lo + 1, fr]].forEach(([i, w]) => { out[Math.min(Math.max(i, 0), n - 1)] += p * w; }); });
+    const s = out.reduce((a, b) => a + b, 0); return out.map(v => v / s);
+  }
+  const distMean = d => d.reduce((s, p, i) => s + i * p, 0);
+
+  // ---- ผู้ชนะ: ผสมโมเดลกับราคา (ตัดค่าน้ำ) แบบเดียวกับ sports_total/winner.py
+  function evaluateWinner(model, odds, quality) {
+    const keys = Object.keys(model);
+    if (!odds || keys.some(k => !isFinite(odds[k]) || Math.abs(odds[k]) < 100)) return { model, prob: model, market: null, edges: null, pick: null, strength: "ไม่มีราคา" };
+    const imp = {}; let s = 0; keys.forEach(k => { imp[k] = 1 / decimal(odds[k]); s += imp[k]; });
+    const market = {}, prob = {}, edges = {};
+    keys.forEach(k => { market[k] = imp[k] / s; prob[k] = MODEL_WEIGHT * model[k] + (1 - MODEL_WEIGHT) * market[k]; edges[k] = prob[k] - imp[k]; });
+    const best = keys.reduce((a, b) => edges[a] >= edges[b] ? a : b);
+    let pick = null, strength = "ผ่าน";
+    if (edges[best] >= STRONG) { pick = best; strength = "แนะนำ"; } else if (edges[best] >= LEAN) { pick = best; strength = "เอนเอียง"; }
+    const gap = Math.max(...keys.map(k => Math.abs(model[k] - market[k])));
+    if (strength === "แนะนำ" && (quality === "ต่ำ" || gap >= 0.15)) strength = "เอนเอียง";
+    return { model, prob, market, edges, pick, strength };
+  }
   // ผสมโมเดลกับไลน์+ราคาที่ผู้ใช้กรอก (ใช้เมื่อนัดนั้นไม่มีราคาเจ้ามือในระบบ)
   function anchored(m, line, oo, uo) {
     const io = 1 / decimal(oo), iu = 1 / decimal(uo), pnv = io / (io + iu);
     const lg = LG(m.league);
     let mt;
+    if (lg && lg.model === "tennis") {
+      const delta = bisect(dl => { const p = lineProbs({ dist: shiftDist(m.dist, dl) }, line); return p.push < 1 ? p.over / (1 - p.push) : 0.5; }, -15, 15, pnv, 40);
+      mt = m.total + delta;
+      const total = MODEL_WEIGHT * m.total + (1 - MODEL_WEIGHT) * mt;
+      return { ...m, rawTotal: m.total, marketTotal: mt, total, dist: shiftDist(m.dist, total - m.total), isMarketLine: true };
+    }
     if (m.sd) mt = line + m.sd * invPhi(pnv);
     else {
       let lo = 0.05, hi = Math.max(3 * line, m.total) + 10;
@@ -438,7 +568,7 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
     const mk = m.market && m.market.line;
     if (lg && lg.lines.length) lg.lines.forEach(v => out.push({ v, mk: v === mk }));
     else {
-      const c = mk ?? Math.floor(m.total) + 0.5, s = lg ? lg.step : 3;
+      const c = mk ?? Math.floor(m.total) + 0.5, s = lg && lg.step ? lg.step : 2;
       [c - s, c, c + s].forEach(v => out.push({ v, mk: v === mk }));
     }
     if (mk != null && !out.some(x => x.v === mk)) out.push({ v: mk, mk: true });
@@ -471,10 +601,14 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
     return bar + v + anchorNote;
   }
 
-  function projHTML(m, homeName, awayName, ex) {
+  function projHTML(m, homeName, awayName, ex, sides = ["เหย้า", "เยือน"]) {
     const unit = UNIT[m.sport] || "แต้ม";
     const nd = m.sport === "soccer" || m.sport === "baseball" ? 2 : 1;
     let range = "";
+    if (m.sport === "tennis" && ex && ex.sets) {
+      const ss = Object.entries(ex.sets).sort((a, b) => b[1] - a[1]);
+      range += `<div class="range">สกอร์เซต (${esc(homeName.split(" ").slice(-1)[0])}-${esc(awayName.split(" ").slice(-1)[0])}): <span class="scores" style="display:inline-flex">${ss.map(([k, v]) => `<span>${esc(k)}<i>${pct(v)}</i></span>`).join("")}</span></div>`;
+    }
     if (ex && ex.market_total != null) {
       const w = ex.model_weight ?? 0.4;
       range += `<div class="range">โมเดลล้วน <b class="num">${fmt(ex.raw_total, nd)}</b> · ไลน์และราคาเจ้ามือบอก <b class="num">${fmt(ex.market_total, nd)}</b> → ผสม ${Math.round(w * 100)}/${Math.round((1 - w) * 100)}</div>`;
@@ -482,24 +616,17 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
     if (m.sd) range += `<div class="range">ช่วงที่น่าจะเป็น 80%: <b class="num">${Math.round(m.total - 1.28 * m.sd)} – ${Math.round(m.total + 1.28 * m.sd)}</b> ${unit} · ผลต่างคาดการณ์ ${esc(homeName)} ${(m.home - m.away >= 0 ? "+" : "") + fmt(m.home - m.away, 1)}</div>`;
     return `<div class="sec"><h3>ผลคาดการณ์</h3>
       <div class="proj">
-        <div class="t"><div class="n">${esc(homeName)} (เหย้า)</div><div class="v">${fmt(m.home, nd)}</div></div>
-        <div class="mid"><div class="v">${fmt(m.total, nd)}</div><div class="n">สกอร์รวม (${unit})</div></div>
-        <div class="t r"><div class="n">${esc(awayName)} (เยือน)</div><div class="v">${fmt(m.away, nd)}</div></div>
+        <div class="t"><div class="n">${esc(homeName)}${sides[0] ? ` (${sides[0]})` : ""}</div><div class="v">${fmt(m.home, nd)}</div></div>
+        <div class="mid"><div class="v">${fmt(m.total, nd)}</div><div class="n">${m.sport === "tennis" ? "จำนวนเกมรวม" : `สกอร์รวม (${unit})`}</div></div>
+        <div class="t r"><div class="n">${esc(awayName)}${sides[1] ? ` (${sides[1]})` : ""}</div><div class="v">${fmt(m.away, nd)}</div></div>
       </div>${range}</div>`;
   }
 
   function extrasHTML(m, ex, homeName, awayName) {
     if (!ex) return "";
     const parts = [];
-    if (m.sport === "soccer" && ex.p_draw != null) {
-      parts.push(`<div class="wdl" role="img" aria-label="ชนะ เสมอ แพ้">
-        <div class="h" style="flex-basis:${ex.p_home_win * 100}%">${pct(ex.p_home_win)}</div>
-        <div class="d" style="flex-basis:${ex.p_draw * 100}%">${pct(ex.p_draw)}</div>
-        <div class="a" style="flex-basis:${ex.p_away_win * 100}%">${pct(ex.p_away_win)}</div></div>
-        <div class="legend"><span>${esc(homeName)} ชนะ</span><span>เสมอ</span><span>${esc(awayName)} ชนะ</span></div>
-        <div>ยิงได้ทั้งสองทีม (BTTS): <b class="num">${pct(ex.p_btts)}</b></div>`);
-    } else if (ex.p_home_win != null) {
-      parts.push(`<div>โอกาสชนะ: ${esc(homeName)} <b class="num">${pct(ex.p_home_win)}</b> · ${esc(awayName)} <b class="num">${pct(ex.p_away_win)}</b></div>`);
+    if (m.sport === "soccer" && ex.p_btts != null) {
+      parts.push(`<div>ยิงได้ทั้งสองทีม (BTTS): <b class="num">${pct(ex.p_btts)}</b></div>`);
     }
     if (ex.top_scores && ex.top_scores.length) {
       parts.push(`<div><div class="src" style="margin-bottom:4px">สกอร์ที่น่าจะเป็น (เหย้า-เยือน)</div><div class="scores">${ex.top_scores.slice(0, 5).map(s => `<span>${esc(s.score)}<i>${pct(s.p)}</i></span>`).join("")}</div></div>`);
@@ -551,6 +678,67 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
     draw();
   }
 
+  // ---------------------------------------------------------------- winner tool
+  const OUTCOMES = w => w.model.draw != null ? ["home", "draw", "away"] : ["home", "away"];
+  function winnerToolHTML(id, w, names, cfg) {
+    const hasMarket = !!w.marketOdds;
+    return `<div class="sec" data-wtool="${esc(id)}">
+      <h3>ผู้ชนะ${w.draw ? " (ชนะ / เสมอ / แพ้)" : ""}</h3>
+      <div class="winlist">${OUTCOMES(w).map(k => `<div class="wrow" data-k="${k}">
+        <span class="nm">${esc(names[k])}</span>
+        <input type="number" inputmode="numeric" aria-label="ราคา ${esc(names[k])}" id="ml-${esc(id)}-${k}" data-ml="${k}" placeholder="ราคา" value="${cfg.odds[k] != null ? Math.round(cfg.odds[k]) : ""}">
+        <span class="track"><i data-bar></i></span>
+        <span class="sub" data-sub></span></div>`).join("")}</div>
+      ${hasMarket ? "" : `<label class="toggle" style="margin-top:8px"><input type="checkbox" data-f="wanchor" id="wanchor-${esc(id)}"${cfg.anchor === false ? "" : " checked"}> ราคาที่กรอกมาจากเจ้ามือ (ผสมโมเดล 40% กับราคา 60%)</label>`}
+      <div data-wout style="margin-top:10px"></div>
+      <div class="src" style="margin-top:6px">${hasMarket ? `ราคาผู้ชนะจาก ${esc(w.provider)} (แบบอเมริกัน) แก้ไขได้` : "ใส่ราคาแบบอเมริกัน เช่น -150 / +130 เพื่อเทียบความคุ้มค่า"}</div>
+    </div>`;
+  }
+  function bindWinnerTool(root, w, id, names, quality) {
+    const tool = root.querySelector(`[data-wtool="${CSS.escape(id)}"]`);
+    if (!tool) return;
+    const cfg = state.lines["w:" + id] || (state.lines["w:" + id] = { odds: { ...(w.marketOdds || {}) }, anchor: true });
+    const draw = () => {
+      const keys = OUTCOMES(w);
+      const complete = keys.every(k => isFinite(cfg.odds[k]) && Math.abs(cfg.odds[k]) >= 100);
+      const useOdds = complete && (w.marketOdds || cfg.anchor !== false);
+      const r = useOdds ? evaluateWinner(w.model, cfg.odds, quality) : evaluateWinner(w.model, null, quality);
+      // ไม่ผสม แต่มีราคา: เทียบโมเดลล้วนกับราคา
+      let edges = r.edges;
+      if (!useOdds && complete) { edges = {}; keys.forEach(k => { edges[k] = w.model[k] - 1 / decimal(cfg.odds[k]); }); }
+      keys.forEach(k => {
+        const row = tool.querySelector(`.wrow[data-k="${k}"]`);
+        row.querySelector("[data-bar]").style.width = (r.prob[k] * 100).toFixed(1) + "%";
+        const parts = [`<b class="num">${pct(r.prob[k], 1)}</b>`];
+        if (r.market) parts.push(`โมเดล ${pct(w.model[k])} · ราคาบอก ${pct(r.market[k])}`);
+        if (edges) parts.push(`edge <b class="num">${(edges[k] * 100 >= 0 ? "+" : "") + (edges[k] * 100).toFixed(1)}%</b>`);
+        row.querySelector("[data-sub]").innerHTML = parts.join(" · ");
+      });
+      const out = tool.querySelector("[data-wout]");
+      let pick = r.pick, strength = r.strength;
+      if (!useOdds && edges) {
+        const best = keys.reduce((a, b) => edges[a] >= edges[b] ? a : b);
+        pick = edges[best] >= LEAN ? best : null; strength = edges[best] >= STRONG ? "แนะนำ" : edges[best] >= LEAN ? "เอนเอียง" : "ผ่าน";
+      }
+      if (pick) out.innerHTML = `<div class="verdict over"><b>${esc(strength)} ${esc(names[pick])} (ราคา ${fmtOdds(cfg.odds[pick])})</b><small>โอกาส ${pct(r.prob[pick], 1)} · ได้เปรียบ ${(edges[pick] * 100).toFixed(1)}% เทียบกับราคา</small></div>`;
+      else if (edges) out.innerHTML = `<div class="verdict"><b>ผ่าน</b><small>ราคาสอดคล้องกับโอกาสแล้ว ไม่มีฝั่งที่ได้เปรียบอย่างน้อย 3%</small></div>`;
+      else { const fav = keys.reduce((a, b) => r.prob[a] >= r.prob[b] ? a : b);
+        out.innerHTML = `<div class="verdict"><b>โมเดลให้ ${esc(names[fav])} ${pct(r.prob[fav])}</b><small>ยังไม่มีราคา ใส่ราคาเพื่อดูว่าคุ้มหรือไม่</small></div>`; }
+    };
+    tool.addEventListener("input", e => {
+      const k = e.target.dataset.ml;
+      if (k) { const v = parseFloat(e.target.value); cfg.odds[k] = isFinite(v) ? v : null; }
+      if (e.target.dataset.f === "wanchor") cfg.anchor = e.target.checked;
+      draw();
+    });
+    draw();
+  }
+  function winnerFromDoc(g) {
+    const w = g.winner; if (!w || !w.model) return null;
+    return { model: w.model, draw: w.model.draw != null, marketOdds: w.odds || null, provider: w.source };
+  }
+  function namesFor(g) { return { home: g.home.name, away: g.away.name, draw: "เสมอ" }; }
+
   // ---------------------------------------------------------------- games view
   function allMatches() {
     const out = [];
@@ -586,19 +774,30 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
     const mk = g.market;
     const started = g.startDate.getTime() <= Date.now();
     const nd = g.sport === "soccer" || g.sport === "baseball" ? 2 : 1;
-    const team = (t, side) => `<div class="teamrow"><span class="side">${side}</span><span class="nm">${esc(t.name)}</span>${t.record ? `<span class="rec">${esc(t.record)}</span>` : ""}</div>`;
+    const tennis = g.sport === "tennis";
+    const team = (t, side) => `<div class="teamrow"><span class="side">${esc(side)}</span><span class="nm">${esc(t.name)}</span>${t.record ? `<span class="rec">${esc(t.record)}</span>` : ""}</div>`;
     const q = g.quality === "ต่ำ" ? `<span class="pill pass">ข้อมูลน้อย</span>` : "";
+    const w = g.winner;
+    let wline = "";
+    if (w && w.prob) {
+      const keys = Object.keys(w.prob), fav = keys.reduce((a, b) => w.prob[a] >= w.prob[b] ? a : b);
+      const nm = k => k === "draw" ? "เสมอ" : (g[k].abbr && !tennis ? g[k].abbr : g[k].name.split(" ").slice(-1)[0]);
+      wline = w.pick ? `<span class="pill win ${w.strength === "แนะนำ" ? "strong" : "lean"}">${esc(w.strength)} ${esc(nm(w.pick))}</span>`
+        : `<span class="lineline">ชนะ <b>${esc(nm(fav))}</b> ${pct(w.prob[fav])}</span>`;
+    }
     return `<details class="match" data-id="${esc(g.league + ":" + g.id)}"${state.open.has(g.league + ":" + g.id) ? " open" : ""}>
       <summary>
         <div class="teams">
           <div class="meta"><span class="time">${timeLabel(g.startDate)}</span><span>${esc(g.leagueName)}</span>${started ? `<span class="pill pass">เริ่มแล้ว</span>` : ""}${q}</div>
-          ${team(g.away, "เยือน")}${team(g.home, "เหย้า")}
+          ${tennis ? team(g.home, g.home.abbr || "") + team(g.away, g.away.abbr || "") : team(g.away, "เยือน") + team(g.home, "เหย้า")}
+          ${tennis && g.event ? `<div class="meta">${esc(g.event)} · ${esc(g.round)}${g.best_of === 5 ? " · 5 เซต" : ""}</div>` : ""}
         </div>
         <div class="board">
-          <span class="lbl">คาดสกอร์รวม</span>
+          <span class="lbl">${tennis ? "คาดเกมรวม" : "คาดสกอร์รวม"}</span>
           <span class="total">${fmt(g.proj.total, nd)}</span>
           ${mk ? `<span class="lineline">ไลน์ <b>${fmtLine(mk.line)}</b></span>` : ""}
-          ${pickPill(g.pick, g.strength, !!mk)}
+          ${mk || !tennis ? pickPill(g.pick, g.strength, !!mk) : ""}
+          ${wline}
         </div>
       </summary>
       <div class="body"></div>
@@ -615,7 +814,24 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
     const init = { line: mk ? mk.line : quickLines(m)[Math.floor(quickLines(m).length / 2)].v,
       oo: mk && mk.over_odds != null ? mk.over_odds : DEFAULT_ODDS, uo: mk && mk.under_odds != null ? mk.under_odds : DEFAULT_ODDS };
     const cfg = state.lines[id] || init;
+    const w = winnerFromDoc(g);
+    const wcfg = state.lines["w:" + id] || { odds: { ...((w && w.marketOdds) || {}) }, anchor: true };
+    const wtool = w ? winnerToolHTML(id, w, namesFor(g), wcfg) : "";
+    if (g.sport === "tennis") {
+      const prow = t => `<tr><td>${esc(t.name)} <span class="src">${esc(t.abbr || "")}</span></td><td>${t.n}</td><td>${t.win_pct != null ? pct(t.win_pct) : "–"}</td><td>${t.elo ?? "–"}</td><td>${fmt(t.gps, 2)}</td><td style="font-family:var(--font-body);letter-spacing:.06em">${esc(t.recent || "–")}</td></tr>`;
+      return `${projHTML(m, g.home.name, g.away.name, g.extras, ["", ""])}
+        ${wtool}
+        ${lineToolHTML(id, m, cfg)}
+        <div class="sec"><h3>ฟอร์ม 52 สัปดาห์ (ระดับทัวร์)</h3>
+          <div class="tablewrap"><table class="form"><thead><tr><th>ผู้เล่น</th><th>แมตช์</th><th>ชนะ</th><th>Elo*</th><th>เกม/เซต</th><th>10 นัดหลัง</th></tr></thead>
+          <tbody>${prow(g.home)}${prow(g.away)}</tbody></table></div>
+          <div class="src" style="margin-top:6px">* Elo จากผล 52 สัปดาห์ (โอกาสชนะใช้ส่วนต่าง Elo × 0.6 ตามการปรับเทียบ) · ${esc(g.event || "")} · ${esc(g.round || "")} · ${g.best_of} เซต · ความน่าเชื่อถือของข้อมูล: ${esc(g.quality)}</div>
+        </div>
+        ${notesHTML(g.notes)}
+        <div class="src">แหล่งข้อมูลไม่มีราคาเจ้ามือสำหรับเทนนิส กรอกราคาผู้ชนะและไลน์จำนวนเกมเองได้ด้านบน</div>`;
+    }
     return `${projHTML(m, g.home.name, g.away.name, g.extras)}
+      ${wtool}
       ${lineToolHTML(id, m, cfg)}
       <div class="sec"><h3>ฟอร์มล่าสุด (${unit}/เกม, ถ่วงน้ำหนักเกมล่าสุด)</h3>
         <div class="tablewrap"><table class="form"><thead><tr><th>ทีม</th><th>นัด</th><th>ได้</th><th>เสีย</th><th>รวมเฉลี่ย</th><th>5 นัดหลัง</th></tr></thead>
@@ -650,8 +866,9 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
     const hiddenStarted = ms.filter(m => m.startDate.getTime() <= now).length;
     ms = ms.filter(m => m.startDate.getTime() > now);
     ms = ms.filter(m => (state.sport === "all" || m.sport === state.sport) && (state.league === "all" || m.league === state.league));
-    if (state.picksOnly) ms = ms.filter(m => m.pick);
-    const picks = ms.filter(m => m.pick).length;
+    const hasPick = m => m.pick || (m.winner && m.winner.pick);
+    if (state.picksOnly) ms = ms.filter(hasPick);
+    const picks = ms.filter(hasPick).length;
     $("#count").textContent = `${ms.length} นัด · มีคำแนะนำ ${picks} นัด` + (hiddenStarted ? ` · ซ่อน ${hiddenStarted} นัดที่เริ่มแล้ว` : "");
 
     if (!all.length) {
@@ -676,6 +893,8 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
           const ql = quickLines(m);
           bindLineTool(body, m, d.dataset.id, { line: mk ? mk.line : ql[Math.floor(ql.length / 2)].v,
             oo: mk && mk.over_odds != null ? mk.over_odds : DEFAULT_ODDS, uo: mk && mk.under_odds != null ? mk.under_odds : DEFAULT_ODDS });
+          const w = winnerFromDoc(g);
+          if (w) bindWinnerTool(body, w, d.dataset.id, namesFor(g), g.quality);
         }
       };
       if (d.open) fill();
@@ -697,8 +916,42 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
       lg.key === "nba" ? [117, 112, 113, 116] : lg.key === "nfl" ? [24, 20, 21, 23] : [lg.avg * 1.04, lg.avg * 0.97, lg.avg, lg.avg * 1.02];
     ["#m-hf", "#m-ha", "#m-af", "#m-aa"].forEach((s, i) => { if (force || !$(s).value) $(s).value = +d[i].toFixed(1); });
   }
+  function computeTennisManual(lg) {
+    const res = $("#manualResult");
+    const p1 = $("#m-p1").value.trim() || "ผู้เล่น 1", p2 = $("#m-p2").value.trim() || "ผู้เล่น 2";
+    let pw = parseFloat($("#m-pw").value);
+    if (!isFinite(pw)) { res.innerHTML = `<div class="empty"><b>ใส่โอกาสชนะของผู้เล่น 1 (2–98%)</b></div>`; return; }
+    pw = Math.min(Math.max(pw, 2), 98) / 100;
+    const bo = parseInt($("#m-bo").value, 10) === 5 ? 5 : 3;
+    // โอกาสที่กรอกคือโอกาสชนะแมตช์ตามรูปแบบจริง -> แปลงกลับเป็นแบบ 3 เซตเพื่อหาระดับฝีมือ
+    let pBo3 = pw;
+    if (bo === 5) pBo3 = bisect(x => solveTennis(x, gamesPerSet(lg.avg), 5).win.pA, 0.02, 0.98, pw, 25);
+    const sol = solveTennis(pBo3, gamesPerSet(lg.avg), bo);
+    const tt = tennisTotals(sol, bo, TENNIS_SHIFT[lg.key] ?? -2);
+    const m = { league: lg.key, sport: "tennis", home: tt.ega, away: tt.egb, total: tt.total, sd: null, dist: tt.dist, market: null, quality: "ปานกลาง" };
+    const id = "manual";
+    const ql = quickLines(m);
+    const prev = state.lines[id];
+    if (!prev || prev.league !== lg.key + bo) state.lines[id] = { line: ql[Math.floor(ql.length / 2)].v, oo: DEFAULT_ODDS, uo: DEFAULT_ODDS, league: lg.key + bo };
+    const w = { model: { home: sol.win.pA, away: 1 - sol.win.pA }, draw: false, marketOdds: null };
+    const names = { home: p1, away: p2 };
+    res.innerHTML = projHTML(m, p1, p2, { sets: tt.sets }, ["", ""]) + winnerToolHTML("manual", w, names, state.lines["w:manual"] || { odds: {}, anchor: true }) +
+      `<div class="quick"><button type="button" id="m-useodds">ใช้โอกาสจากราคา</button></div>` +
+      lineToolHTML(id, m, state.lines[id]) + notesHTML(["คำนวณจากโอกาสชนะที่กรอก กับระดับเสิร์ฟเฉลี่ยของทัวร์ (ไม่รู้สไตล์การเล่นของผู้เล่นแต่ละคน)"]);
+    bindWinnerTool(res, w, "manual", names, "ปานกลาง");
+    bindLineTool(res, m, id, state.lines[id]);
+    $("#m-useodds").addEventListener("click", () => {
+      const o = (state.lines["w:manual"] || {}).odds || {};
+      if (![o.home, o.away].every(v => isFinite(v) && Math.abs(v) >= 100)) return;
+      const a = 1 / decimal(o.home), b = 1 / decimal(o.away);
+      $("#m-pw").value = (a / (a + b) * 100).toFixed(1); computeManual();
+    });
+  }
   function computeManual() {
     const lg = LG($("#m-league").value);
+    const isTennis = lg.sport === "tennis";
+    $("#m-tennisFields").hidden = !isTennis; $("#m-teamFields").hidden = isTennis;
+    if (isTennis) return computeTennisManual(lg);
     const num = s => { const v = parseFloat($(s).value); return isFinite(v) && v >= 0 ? v : null; };
     const hf = num("#m-hf"), ha = num("#m-ha"), af = num("#m-af"), aa = num("#m-aa");
     const n = Math.max(1, Math.round(num("#m-n") || 10));
@@ -726,8 +979,20 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
     const ql = quickLines(m);
     const prev = state.lines[id];
     if (!prev || prev.league !== lg.key) state.lines[id] = { line: ql[Math.floor(ql.length / 2)].v, oo: DEFAULT_ODDS, uo: DEFAULT_ODDS, league: lg.key };
-    res.innerHTML = projHTML(m, hn, an) + lineToolHTML(id, m, state.lines[id]) + extrasHTML(m, ex, hn, an) +
+    let model;
+    if (lg.model === "normal") {
+      const msd = lg.margin * Math.sqrt(1 + 1 / (n + lg.prior)), ph = msd > 0 ? ncdf((home - away) / msd) : 0.5;
+      model = { home: ph, away: 1 - ph };
+    } else model = ex.p_draw != null ? { home: ex.p_home_win, draw: ex.p_draw, away: ex.p_away_win } : { home: ex.p_home_win, away: ex.p_away_win };
+    const w = { model, draw: model.draw != null, marketOdds: null };
+    const wkey = "w:manual";
+    if (state.lines[wkey] && state.lines[wkey].league !== lg.key) delete state.lines[wkey];
+    const names = { home: hn, away: an, draw: "เสมอ" };
+    res.innerHTML = projHTML(m, hn, an) + winnerToolHTML("manual", w, names, state.lines[wkey] || { odds: {}, anchor: true }) +
+      lineToolHTML(id, m, state.lines[id]) + extrasHTML(m, ex, hn, an) +
       (n < 4 ? notesHTML([`ใช้ข้อมูลเพียง ${n} นัด ผลอาจคลาดเคลื่อนสูง`]) : "");
+    bindWinnerTool(res, w, "manual", names, m.quality);
+    state.lines[wkey].league = lg.key;
     bindLineTool(res, m, id, state.lines[id]);
   }
 

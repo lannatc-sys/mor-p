@@ -206,6 +206,86 @@ class EuroLeagueTests(unittest.TestCase):
                          [(75, 70, False), (90, 80, True)])
 
 
+class WinnerTests(unittest.TestCase):
+    def test_evaluate_winner(self):
+        from sports_total.winner import Moneyline, evaluate_winner
+        w = evaluate_winner({"home": 0.6, "away": 0.4}, None)
+        self.assertEqual((w.pick, w.prob["home"]), (None, 0.6))
+        w = evaluate_winner({"home": 0.6, "away": 0.4}, Moneyline("X", 120, -140))
+        self.assertAlmostEqual(sum(w.market.values()), 1)
+        self.assertAlmostEqual(w.prob["home"], 0.4 * 0.6 + 0.6 * w.market["home"])
+        self.assertEqual((w.pick, w.strength), ("home", "เอนเอียง"))
+        # ตลาดสองทางกับโมเดลสามทาง -> ไม่ใช้ราคา
+        w = evaluate_winner({"home": .5, "draw": .25, "away": .25}, Moneyline("X", -110, -110))
+        self.assertIsNone(w.market)
+
+    def test_team_sport_winner(self):
+        for key in ("nba", "epl", "mlb", "nfl"):
+            lg = get_league(key)
+            m = Match("x", key, datetime(2026, 11, 14, tzinfo=timezone.utc), "pre", "", Team("h", "H"), Team("a", "A"))
+            avg = lg.team_avg
+            a = TotalAnalyzer(lg).evaluate(m, TeamForm.manual(m.home, avg * 1.2, avg * 0.85, 10),
+                                           TeamForm.manual(m.away, avg * 0.9, avg * 1.1, 10))
+            self.assertAlmostEqual(sum(a.winner.model.values()), 1, places=6, msg=key)
+            self.assertGreater(a.winner.model["home"], a.winner.model["away"] + 0.2, msg=key)
+            self.assertEqual("draw" in a.winner.model, key == "epl")
+
+    def test_moneyline_parse(self):
+        from sports_total.espn import _moneyline
+        comp = {"odds": [{"provider": {"name": "DK"}, "moneyline": {
+            "home": {"close": {"odds": "-148"}}, "away": {"close": {"odds": "+124"}}, "draw": {}},
+            "drawOdds": {"moneyLine": 250}}]}
+        ml = _moneyline(comp)
+        self.assertEqual((ml.provider, ml.home, ml.away, ml.draw), ("DK", -148, 124, 250))
+        self.assertIsNone(_moneyline({"odds": [{"overUnder": 220}]}))
+
+
+class TennisTests(unittest.TestCase):
+    def test_markov(self):
+        from sports_total import tennis_model as tm
+        r = tm.match_result(0.64, 0.64, 3)
+        self.assertAlmostEqual(r["p_a"], 0.5, places=6)
+        self.assertAlmostEqual(sum(r["dist"]), 1, places=9)
+        self.assertAlmostEqual(sum(r["sets"].values()), 1, places=9)
+        self.assertEqual(min(i for i, p in enumerate(r["dist"]) if p > 0), 12)   # 6-0 6-0
+        self.assertAlmostEqual(tm.tiebreak_prob(0.6, 0.6), 0.5, places=9)
+        s3 = tm.solve_match(0.7, 9.8, 3)
+        s5 = tm.solve_match(0.7, 9.8, 5)
+        self.assertAlmostEqual(s3["p_a"], 0.7, places=3)
+        self.assertGreater(s5["p_a"], 0.72)                      # 5 เซตเอื้อมือดีกว่า
+        self.assertGreater(s5["e_total"], s3["e_total"] + 10)
+        d = tm.shift_dist([0.2, 0.3, 0.5], -0.5)
+        self.assertAlmostEqual(sum(d), 1)
+
+    def test_parse_day(self):
+        from sports_total.tennis import parse_day
+
+        def comp(cid, a, b, sets, winner_a=True, state="post"):
+            def side(pid, name, order, games, win):
+                return {"id": pid, "order": order, "winner": win, "athlete": {"displayName": name, "flag": {"alt": "X"}},
+                        "linescores": [{"value": g} for g in games]}
+            return {"id": cid, "date": "2026-11-10T10:00Z", "format": {"regulation": {"periods": 5}},
+                    "status": {"type": {"state": state, "completed": state == "post"}}, "notes": [],
+                    "competitors": [side(a, "P" + a, 1, [x for x, _ in sets], winner_a),
+                                    side(b, "P" + b, 2, [y for _, y in sets], not winner_a)]}
+
+        data = {"events": [{"name": "Stockholm Open", "groupings": [
+            {"grouping": {"displayName": "Men's Singles"}, "competitions": [
+                comp("1", "a", "b", [(6, 4), (7, 6)]),
+                comp("2", "c", "d", [(6, 4), (2, 1)], state="post")]},
+            {"grouping": {"displayName": "Women's Singles"}, "competitions": [comp("3", "e", "f", [(6, 1), (6, 1)])]},
+            {"grouping": {"displayName": "Men's Doubles"}, "competitions": [comp("4", "g", "h", [(6, 1), (6, 1)])]},
+        ]}, {"name": "US Open", "groupings": [{"grouping": {"displayName": "Men's Singles"}, "competitions": [
+            comp("5", "i", "j", [], state="pre")]}]}]}
+        ms = {m.id: m for m in parse_day(data, "atp")}
+        self.assertEqual(sorted(ms), ["1", "2", "5"])         # เฉพาะชายเดี่ยว
+        self.assertTrue(ms["1"].clean)
+        self.assertEqual(ms["1"].best_of, 3)                   # ESPN บอก 5 แต่จริงคือ 3
+        self.assertFalse(ms["2"].clean)                        # ถอนตัวกลางเซต
+        self.assertEqual(ms["5"].best_of, 5)                   # แกรนด์สแลมชาย
+        self.assertEqual([m.id for m in parse_day(data, "wta")], ["3"])
+
+
 class CliTests(unittest.TestCase):
     def run_cli(self, *argv):
         buf = io.StringIO()

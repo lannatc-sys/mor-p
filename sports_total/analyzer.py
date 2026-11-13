@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from . import stats
 from .leagues import NEGBIN, NORMAL, POISSON, SOCCER, League
 from .models import GameResult, Match, Team
+from .winner import Moneyline, WinnerEval, evaluate_winner
 
 DEFAULT_ODDS = -110.0
 LEAN_EDGE = 0.03     # ได้เปรียบ >= 3% -> "เอนเอียง"
@@ -108,6 +109,7 @@ class Analysis:
     data_quality: str         # "สูง" / "ปานกลาง" / "ต่ำ"
     notes: list[str] = field(default_factory=list)
     extras: dict = field(default_factory=dict)
+    winner: WinnerEval | None = None
 
     @property
     def total(self) -> float:
@@ -143,6 +145,7 @@ class Analysis:
             "ladder": [le(x) for x in self.ladder],
             "pick": self.pick, "strength": self.strength, "data_quality": self.data_quality,
             "notes": self.notes, "extras": self.extras,
+            "winner": self.winner.to_doc() if self.winner else None,
         }
 
 
@@ -162,7 +165,8 @@ class TotalAnalyzer:
 
     # ---------------------------------------------------------- public ---
     def analyze(self, match: Match, line: float | None = None,
-                over_odds: float | None = None, under_odds: float | None = None) -> Analysis:
+                over_odds: float | None = None, under_odds: float | None = None,
+                moneyline: Moneyline | None = None) -> Analysis:
         if self.client is None:
             raise RuntimeError("ต้องมี client สำหรับดึงข้อมูล")
         hg = self.client.team_games(self.league, match.home.id, before=match.start,
@@ -171,10 +175,11 @@ class TotalAnalyzer:
                                     want=self.last_n)[: self.last_n]
         hf = TeamForm.from_games(match.home, hg, self.half_life)
         af = TeamForm.from_games(match.away, ag, self.half_life)
-        return self.evaluate(match, hf, af, line, over_odds, under_odds)
+        return self.evaluate(match, hf, af, line, over_odds, under_odds, moneyline)
 
     def evaluate(self, match: Match, hf: TeamForm, af: TeamForm, line: float | None = None,
-                 over_odds: float | None = None, under_odds: float | None = None) -> Analysis:
+                 over_odds: float | None = None, under_odds: float | None = None,
+                 moneyline: Moneyline | None = None) -> Analysis:
         lg = self.league
         avg = self.league_avg
 
@@ -255,9 +260,22 @@ class TotalAnalyzer:
             if strength == "แนะนำ" and (quality == "ต่ำ" or (anchor is not None and big_gap)):
                 strength = "เอนเอียง"
 
+        # ---- ผู้ชนะ ----
+        if dist is None:
+            msd = lg.margin_sd * math.sqrt(1.0 + 1.0 / (max(n_min, 1) + lg.prior_games))
+            p_home = stats.norm_cdf((h_exp - a_exp) / msd) if msd > 0 else 0.5
+            win_model = {"home": p_home, "away": 1 - p_home}
+            extras["margin_sd"] = round(msd, 2)
+        elif "p_draw" in extras:
+            win_model = {"home": extras["p_home_win"], "draw": extras["p_draw"],
+                         "away": extras["p_away_win"]}
+        else:
+            win_model = {"home": extras["p_home_win"], "away": extras["p_away_win"]}
+        winner = evaluate_winner(win_model, moneyline or match.moneyline, self.model_weight, quality)
+
         notes = self._notes(match, hf, af, raw_total, sd, line)
         return Analysis(match, lg, hf, af, avg, h_exp, a_exp, sd, dist, main, src, ladder,
-                        pick, strength, quality, notes, extras)
+                        pick, strength, quality, notes, extras, winner)
 
     # --------------------------------------------------------- internals ---
     def _project(self, hf: TeamForm, af: TeamForm) -> tuple[float, float]:
