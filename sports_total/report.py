@@ -73,6 +73,10 @@ def render(a: Analysis) -> str:
     out.append(f"   {m.home.name}: {a.home_exp:.2f}   {m.away.name}: {a.away_exp:.2f}")
     sd_s = f"  (±{a.sd:.1f} ส่วนเบี่ยงเบนมาตรฐาน)" if a.sd else ""
     out.append(f"   สกอร์รวมคาดการณ์: {a.total:.2f} {u}{sd_s}")
+    if "market_total" in a.extras:
+        w = a.extras["model_weight"]
+        out.append(f"   (โมเดลล้วน {a.extras['raw_total']:.2f} · ตลาดคาด {a.extras['market_total']:.2f}"
+                   f" · ผสม {w:.0%}/{1 - w:.0%})")
     if lg.model == NORMAL and a.sd:
         lo, hi = a.total - 1.28 * a.sd, a.total + 1.28 * a.sd
         out.append(f"   ช่วง 80%: {lo:.0f} – {hi:.0f} {u}")
@@ -111,8 +115,8 @@ def render(a: Analysis) -> str:
     elif a.main is not None:
         out.append("สรุป: ผ่าน — ไม่พบความได้เปรียบเพียงพอเทียบกับไลน์")
     else:
-        lean = "สูง" if a.total > a.ladder[len(a.ladder) // 2].line else "ต่ำ"
-        out.append(f"สรุป: ไม่มีไลน์อ้างอิง — โมเดลคาดสกอร์รวม {a.total:.1f} {u} (เอน{lean})")
+        out.append(f"สรุป: ไม่มีไลน์อ้างอิง — โมเดลคาดสกอร์รวม {a.total:.1f} {u} "
+                   "(กำหนดไลน์ด้วย --line เพื่อดูคำแนะนำ)")
     out.append(f"ความน่าเชื่อถือของข้อมูล: {a.data_quality}")
     for n in a.notes:
         out.append(f" ⚠ {n}")

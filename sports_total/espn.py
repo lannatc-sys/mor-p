@@ -266,13 +266,29 @@ class ESPNClient:
 
     # -- high level --
     def scoreboard(self, league: League, day: date | None = None, days: int = 1) -> list[Match]:
+        path = f"{league.sport}/{league.slug}/scoreboard"
         params = dict(league.scoreboard_params)
-        if day is not None:
-            end = day + timedelta(days=max(days, 1) - 1)
-            params["dates"] = day.strftime("%Y%m%d") + (
-                "-" + end.strftime("%Y%m%d") if end != day else "")
-        data = self.get_json(f"{league.sport}/{league.slug}/scoreboard", params, ttl=300)
-        return parse_scoreboard(data, league.key)
+        if day is None:
+            if days <= 1:
+                return parse_scoreboard(self.get_json(path, params, ttl=300), league.key)
+            day = datetime.now(timezone(timedelta(hours=-5))).date()
+        end = day + timedelta(days=max(days, 1) - 1)
+        if end != day and league.sport != "soccer":  # ฟุตบอลไม่รองรับช่วงวันที่
+            try:
+                params["dates"] = f"{day:%Y%m%d}-{end:%Y%m%d}"
+                return parse_scoreboard(self.get_json(path, params, ttl=300), league.key)
+            except FetchError:
+                pass
+        matches, seen = [], set()
+        d = day
+        while d <= end:
+            params["dates"] = f"{d:%Y%m%d}"
+            for m in parse_scoreboard(self.get_json(path, params, ttl=300), league.key):
+                if m.event_id not in seen:
+                    seen.add(m.event_id)
+                    matches.append(m)
+            d += timedelta(days=1)
+        return sorted(matches, key=lambda m: m.start)
 
     def team_games(self, league: League, team_id: str, before: datetime | None = None,
                    want: int = 10) -> list[GameResult]:

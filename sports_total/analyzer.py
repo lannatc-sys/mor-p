@@ -21,6 +21,7 @@ from .models import GameResult, Match, Team
 DEFAULT_ODDS = -110.0
 LEAN_EDGE = 0.03     # ได้เปรียบ >= 3% -> "เอนเอียง"
 STRONG_EDGE = 0.06   # ได้เปรียบ >= 6% -> "แนะนำ"
+MODEL_WEIGHT = 0.4   # น้ำหนักของโมเดลเมื่อมีไลน์ตลาด (ที่เหลือเชื่อตลาด); 1.0 = ใช้โมเดลล้วน
 
 
 @dataclass
@@ -151,8 +152,9 @@ def _r(x, nd=2):
 
 class TotalAnalyzer:
     def __init__(self, league: League, client=None, last_n: int = 10, half_life: float = 6.0,
-                 league_avg: float | None = None):
+                 league_avg: float | None = None, model_weight: float = MODEL_WEIGHT):
         self.league = league
+        self.model_weight = min(max(model_weight, 0.0), 1.0)
         self.client = client
         self.last_n = last_n
         self.half_life = half_life
@@ -177,33 +179,30 @@ class TotalAnalyzer:
         avg = self.league_avg
 
         h_exp, a_exp = self._project(hf, af)
+        raw_total = h_exp + a_exp
+        n_min = max(min(hf.n, af.n), 1)
+        sd = (lg.total_sd * math.sqrt(1.0 + 1.0 / (n_min + lg.prior_games))
+              if lg.model == NORMAL else None)
 
-        sd = dist = None
-        extras: dict = {}
-        if lg.model == NORMAL:
-            n_min = max(min(hf.n, af.n), 1)
-            sd = lg.total_sd * math.sqrt(1.0 + 1.0 / (n_min + lg.prior_games))
+        # ---- ผสมกับตลาด: หาสกอร์รวมที่ไลน์+ราคาของเจ้ามือบอกไว้ แล้วถ่วงน้ำหนักกับโมเดล ----
+        market = match.market
+        market_total = None
+        if market is not None and self.model_weight < 1.0:
+            market_total = self._market_total(h_exp, a_exp, sd, market)
+            target = self.model_weight * raw_total + (1 - self.model_weight) * market_total
+            h_exp, a_exp = h_exp * target / raw_total, a_exp * target / raw_total
 
-            def probs(x):
-                return stats.normal_line_probs(h_exp + a_exp, sd, x)
+        dist, probs, dh, da = self._build(h_exp, a_exp, sd)
+        extras: dict = {"raw_total": round(raw_total, 2)}
+        if market_total is not None:
+            extras["market_total"] = round(market_total, 2)
+            extras["model_weight"] = self.model_weight
+        if dist is None:
             extras["proj_margin_home"] = round(h_exp - a_exp, 2)
         else:
-            if lg.model == POISSON:
-                max_k = 12
-                dh = stats.distribution(lambda k: stats.poisson_pmf(k, h_exp), max_k)
-                da = stats.distribution(lambda k: stats.poisson_pmf(k, a_exp), max_k)
-            else:  # NEGBIN
-                max_k = 30
-                dh = stats.distribution(lambda k: stats.negbin_pmf(k, h_exp, lg.dispersion), max_k)
-                da = stats.distribution(lambda k: stats.negbin_pmf(k, a_exp, lg.dispersion), max_k)
-            dist = stats.convolve(dh, da)
             extras.update(self._discrete_extras(dh, da))
 
-            def probs(x):
-                return stats.discrete_line_probs(dist, x)
-
         # ---- ไลน์หลัก ----
-        market = match.market
         if line is not None:
             src = "กำหนดเอง"
         elif market is not None:
@@ -246,11 +245,11 @@ class TotalAnalyzer:
             elif edge >= LEAN_EDGE:
                 pick, strength = best, "เอนเอียง"
             # ข้อมูลน้อย หรือโมเดลต่างจากตลาดมากผิดปกติ -> ลดระดับความมั่นใจ
-            big_gap = abs(h_exp + a_exp - line) >= self._gap_threshold(sd)
+            big_gap = abs(raw_total - line) >= self._gap_threshold(sd)
             if strength == "แนะนำ" and (quality == "ต่ำ" or (market is not None and big_gap)):
                 strength = "เอนเอียง"
 
-        notes = self._notes(match, hf, af, h_exp + a_exp, sd, line)
+        notes = self._notes(match, hf, af, raw_total, sd, line)
         return Analysis(match, lg, hf, af, avg, h_exp, a_exp, sd, dist, main, src, ladder,
                         pick, strength, quality, notes, extras)
 
@@ -268,6 +267,41 @@ class TotalAnalyzer:
         h_exp = h_off * a_def / avg * (1.0 + lg.home_adv)
         a_exp = a_off * h_def / avg * (1.0 - lg.home_adv)
         return max(h_exp, 0.05), max(a_exp, 0.05)
+
+    def _build(self, h_exp: float, a_exp: float, sd: float | None):
+        """คืน (dist, probs(line), dist_home, dist_away) สำหรับคะแนนคาดการณ์ที่กำหนด"""
+        lg = self.league
+        if lg.model == NORMAL:
+            return None, (lambda x: stats.normal_line_probs(h_exp + a_exp, sd, x)), None, None
+        if lg.model == POISSON:
+            max_k = 12
+            dh = stats.distribution(lambda k: stats.poisson_pmf(k, h_exp), max_k)
+            da = stats.distribution(lambda k: stats.poisson_pmf(k, a_exp), max_k)
+        else:  # NEGBIN
+            max_k = 30
+            dh = stats.distribution(lambda k: stats.negbin_pmf(k, h_exp, lg.dispersion), max_k)
+            da = stats.distribution(lambda k: stats.negbin_pmf(k, a_exp, lg.dispersion), max_k)
+        dist = stats.convolve(dh, da)
+        return dist, (lambda x: stats.discrete_line_probs(dist, x)), dh, da
+
+    def _market_total(self, h_exp: float, a_exp: float, sd: float | None, market) -> float:
+        """สกอร์รวมเฉลี่ยที่ทำให้โอกาส 'สูง' (ตัดค่าน้ำแล้ว) ตรงกับราคาของเจ้ามือ"""
+        oo = market.over_odds if market.over_odds is not None else DEFAULT_ODDS
+        uo = market.under_odds if market.under_odds is not None else DEFAULT_ODDS
+        io, iu = 1 / stats.american_to_decimal(oo), 1 / stats.american_to_decimal(uo)
+        target = io / (io + iu)   # P(สูง | ไม่เสมอไลน์)
+        base = h_exp + a_exp
+        lo, hi = 0.05, max(3.0 * market.line, base) + 10.0
+        for _ in range(50):
+            mid = (lo + hi) / 2
+            _, probs, _, _ = self._build(h_exp * mid / base, a_exp * mid / base, sd)
+            p_o, p_u, p_p = probs(market.line)
+            cond = p_o / (1 - p_p) if p_p < 1 else 0.5
+            if cond < target:
+                lo = mid
+            else:
+                hi = mid
+        return (lo + hi) / 2
 
     def _discrete_extras(self, dh: list[float], da: list[float]) -> dict:
         p_home = sum(dh[i] * da[j] for i in range(len(dh)) for j in range(len(da)) if i > j)

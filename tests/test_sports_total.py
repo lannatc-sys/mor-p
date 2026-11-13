@@ -130,6 +130,22 @@ class AnalyzerTests(unittest.TestCase):
         b = TotalAnalyzer(lg).evaluate(m, hf, af, line=round(a.total) + 0.5)
         self.assertEqual(b.strength, "ผ่าน")
 
+    def test_market_blend(self):
+        from sports_total.models import MarketTotal
+        for key, line in (("nba", 225.5), ("epl", 2.5), ("mlb", 8.5), ("nfl", 44.5)):
+            lg, m = self._match(key)
+            m.markets = [MarketTotal("X", line, -110, -110)]
+            hf = TeamForm.manual(m.home, lg.team_avg * 1.3, lg.team_avg * 1.3, 10)
+            af = TeamForm.manual(m.away, lg.team_avg * 1.3, lg.team_avg * 1.3, 10)
+            pure = TotalAnalyzer(lg, model_weight=1.0).evaluate(m, hf, af)
+            mixed = TotalAnalyzer(lg).evaluate(m, hf, af)
+            mt = mixed.extras["market_total"]
+            # ราคาเท่ากันสองฝั่ง -> ตลาดคาดค่ากลางใกล้ไลน์
+            self.assertAlmostEqual(mt, line, delta=0.08 * line + 0.5, msg=key)
+            self.assertAlmostEqual(mixed.total, 0.4 * pure.total + 0.6 * mt, delta=0.01, msg=key)
+            self.assertLess(abs(mixed.main.edge_over), abs(pure.main.edge_over), msg=key)
+            self.assertEqual(mixed.extras["raw_total"], round(pure.total, 2))
+
     def test_small_sample_shrinks_and_downgrades(self):
         lg, m = self._match("nba")
         hf = TeamForm.manual(m.home, 140, 140, 1)

@@ -1,0 +1,748 @@
+<title>ป้ายสกอร์รวม</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<style>
+/* Layout: แถบหัวติดบน + รายการนัดเรียงตามวัน แต่ละนัดเป็น "ป้ายคะแนน" แตะเพื่อกางรายละเอียด */
+:root {
+  --bg: #eef1f3;
+  --surface: #ffffff;
+  --surface-2: #f6f8f9;
+  --ink: #142028;
+  --muted: #5a6a75;
+  --line: #d9e0e5;
+  --accent: #1c3b57;
+  --accent-ink: #ffffff;
+  --over: #c2410c;
+  --over-soft: #fbe6da;
+  --under: #0f6e6a;
+  --under-soft: #d6efed;
+  --push: #94a3ad;
+  --warn: #9a6400;
+  --warn-soft: #fbf0d6;
+  --font-display: "Chakra Petch", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans Thai", "Sukhumvit Set", "Thonburi", system-ui, sans-serif;
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1418; --surface: #151f25; --surface-2: #1b272e; --ink: #e5edf1; --muted: #8fa2ad;
+    --line: #26343c; --accent: #9cc3e6; --accent-ink: #0d1418; --over: #fb8a4c; --over-soft: #3a2116;
+    --under: #3fc7bd; --under-soft: #12302e; --push: #6b7c86; --warn: #f0b84a; --warn-soft: #33290f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1418; --surface: #151f25; --surface-2: #1b272e; --ink: #e5edf1; --muted: #8fa2ad;
+  --line: #26343c; --accent: #9cc3e6; --accent-ink: #0d1418; --over: #fb8a4c; --over-soft: #3a2116;
+  --under: #3fc7bd; --under-soft: #12302e; --push: #6b7c86; --warn: #f0b84a; --warn-soft: #33290f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface);
+}
+.wrap {
+  max-width: 720px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- header ---------- */
+header {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+header .wrap { padding-block: 12px 10px; display: grid; gap: 10px; }
+.brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: .01em; }
+.brand h1 span { color: var(--over); }
+.updated { font-size: 12.5px; color: var(--muted); }
+.updated.stale { color: var(--warn); }
+.tabs { display: flex; gap: 4px; background: var(--surface-2); border-radius: 10px; padding: 3px; }
+.tabs button {
+  flex: 1; border: 0; background: transparent; padding: 7px 10px; border-radius: 8px; font-weight: 600; font-size: 14px;
+  color: var(--muted); cursor: pointer;
+}
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; border: 1px solid var(--line); background: var(--surface); padding: 5px 12px; border-radius: 999px;
+  font-size: 13.5px; cursor: pointer; white-space: nowrap; color: var(--ink);
+}
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.chip .c { color: var(--muted); font-size: 12px; margin-left: 4px; }
+.chip[aria-pressed="true"] .c { color: inherit; opacity: .75; }
+.chips.sub .chip { font-size: 12.5px; padding: 3px 10px; }
+
+main .wrap { padding-block: 14px 40px; display: grid; gap: 18px; }
+.toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+/* ---------- day groups ---------- */
+.day { display: grid; gap: 8px; }
+.day h2 { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: .03em; }
+
+/* ---------- match card ---------- */
+details.match { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+details.match > summary { list-style: none; cursor: pointer; padding: 12px 12px 12px 14px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+details.match > summary::-webkit-details-marker { display: none; }
+details.match[open] > summary { border-bottom: 1px dashed var(--line); }
+.meta { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
+.meta .time { font-family: var(--font-display); font-weight: 600; color: var(--ink); font-size: 14px; }
+.teams { min-width: 0; display: grid; gap: 4px; }
+.teamrow { display: flex; gap: 6px; align-items: baseline; min-width: 0; }
+.teamrow .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.teamrow .rec { font-size: 12px; color: var(--muted); flex: none; }
+.teamrow .side { font-size: 11px; color: var(--muted); flex: none; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.board { text-align: right; display: grid; gap: 4px; justify-items: end; }
+.board .total { font-family: var(--font-display); font-weight: 700; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+.board .lbl { font-size: 11px; color: var(--muted); }
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.over { background: var(--over-soft); color: var(--over); }
+.pill.under { background: var(--under-soft); color: var(--under); }
+.pill.over.strong { background: var(--over); color: var(--surface); }
+.pill.under.strong { background: var(--under); color: var(--surface); }
+.pill.pass { background: var(--surface-2); color: var(--muted); }
+.pill.noline { background: transparent; color: var(--muted); border: 1px dashed var(--line); }
+.lineline { font-size: 12px; color: var(--muted); }
+.lineline b { color: var(--ink); font-family: var(--font-display); }
+
+.body { padding: 12px 14px 16px; display: grid; gap: 16px; }
+.sec h3 { margin: 0 0 8px; font-size: 12.5px; font-weight: 600; color: var(--muted); letter-spacing: .04em; }
+.tablewrap { overflow-x: auto; }
+table.form { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.form th, table.form td { padding: 6px 6px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.form th:first-child, table.form td:first-child { text-align: left; white-space: normal; }
+table.form th { font-weight: 500; color: var(--muted); font-size: 12px; }
+table.form td { font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
+
+.proj { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+.proj .t { min-width: 0; }
+.proj .t .n { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proj .t .v { font-family: var(--font-display); font-size: 22px; font-weight: 600; }
+.proj .t.r { text-align: right; }
+.proj .mid { text-align: center; }
+.proj .mid .v { font-family: var(--font-display); font-size: 30px; font-weight: 700; line-height: 1; }
+.proj .mid .n { font-size: 11.5px; color: var(--muted); }
+.range { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+
+/* line tool */
+.linetool { display: grid; gap: 10px; }
+.stepper { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.stepper .ctl { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.stepper .ctl button { width: 40px; height: 40px; border: 0; background: var(--surface-2); font-size: 20px; cursor: pointer; }
+.stepper .ctl input { width: 84px; height: 40px; border: 0; text-align: center; font-family: var(--font-display); font-size: 18px; font-weight: 600; background: var(--surface); }
+.odds { display: flex; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); align-items: center; }
+.odds label { display: inline-flex; align-items: center; gap: 4px; }
+.odds input { width: 64px; height: 32px; border: 1px solid var(--line); border-radius: 8px; text-align: center; background: var(--surface); font-family: var(--font-display); }
+.quick { display: flex; gap: 6px; flex-wrap: wrap; }
+.quick button { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 3px 9px; font-family: var(--font-display); font-size: 13px; cursor: pointer; }
+.quick button.mk { border-color: var(--accent); color: var(--accent); }
+.bar { display: flex; height: 30px; border-radius: 8px; overflow: hidden; font-size: 12.5px; font-weight: 600; font-family: var(--font-display); }
+.bar > div { display: flex; align-items: center; padding: 0 8px; white-space: nowrap; overflow: hidden; min-width: 0; }
+.bar .o { background: var(--over-soft); color: var(--over); }
+.bar .p { background: var(--surface-2); color: var(--muted); justify-content: center; }
+.bar .u { background: var(--under-soft); color: var(--under); justify-content: flex-end; }
+.legend { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); gap: 8px; flex-wrap: wrap; }
+.verdict { padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 14px; display: grid; gap: 2px; }
+.verdict b { font-size: 15px; }
+.verdict.over { background: var(--over-soft); }
+.verdict.over b { color: var(--over); }
+.verdict.under { background: var(--under-soft); }
+.verdict.under b { color: var(--under); }
+.verdict small { color: var(--muted); font-size: 12.5px; }
+
+.extras { display: grid; gap: 8px; font-size: 13.5px; }
+.wdl { display: flex; height: 24px; border-radius: 6px; overflow: hidden; font-size: 12px; font-family: var(--font-display); font-weight: 600; }
+.wdl > div { display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; }
+.wdl .h { background: var(--accent); color: var(--accent-ink); }
+.wdl .d { background: var(--push); color: var(--surface); }
+.wdl .a { background: var(--surface-2); color: var(--ink); }
+.scores { display: flex; gap: 6px; flex-wrap: wrap; }
+.scores span { background: var(--surface-2); border-radius: 6px; padding: 2px 8px; font-family: var(--font-display); font-size: 13px; }
+.scores span i { font-style: normal; color: var(--muted); font-size: 11.5px; margin-left: 4px; }
+.histo { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; align-items: end; height: 92px; }
+.histo .col { display: grid; grid-template-rows: auto 1fr auto; height: 100%; text-align: center; font-size: 10.5px; color: var(--muted); }
+.histo .col .b { align-self: end; background: var(--accent); opacity: .8; border-radius: 3px 3px 0 0; }
+.histo .col .k { font-family: var(--font-display); color: var(--ink); font-size: 12px; }
+
+.notes { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.notes li { background: var(--warn-soft); color: var(--ink); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
+.notes li::before { content: "!"; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--warn); color: var(--surface); font-size: 11px; font-weight: 700; margin-right: 6px; }
+.src { font-size: 12px; color: var(--muted); }
+
+/* states */
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); padding: 20px 16px; text-align: center; color: var(--muted); display: grid; gap: 6px; }
+.empty b { color: var(--ink); font-size: 16px; }
+.banner { background: var(--warn-soft); border-radius: 10px; padding: 9px 12px; font-size: 13px; }
+
+/* manual */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 420px) { .grid2 { grid-template-columns: 1fr; } }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field label { font-size: 12.5px; color: var(--muted); }
+.field input, .field select { height: 42px; border: 1px solid var(--line); border-radius: 10px; padding: 0 10px; background: var(--surface); width: 100%; min-width: 0; }
+.field input.num { font-size: 16px; }
+.teambox { display: grid; gap: 8px; background: var(--surface-2); border-radius: 10px; padding: 10px; }
+.teambox h4 { margin: 0; font-size: 13px; }
+.disclaimer { font-size: 12px; color: var(--muted); text-align: center; padding-top: 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  details.match { transition: border-color .15s; }
+  .bar > div, .wdl > div { transition: flex-basis .2s ease; }
+}
+</style>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <h1>ป้าย<span>สกอร์รวม</span></h1>
+      <div class="updated" id="updated">กำลังโหลดข้อมูล…</div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tab-games" aria-selected="true">นัดก่อนเริ่มเกม</button>
+      <button role="tab" id="tab-manual" aria-selected="false">คำนวณเอง</button>
+    </div>
+    <div class="chips" id="sportChips" role="group" aria-label="เลือกกีฬา"></div>
+    <div class="chips sub" id="leagueChips" role="group" aria-label="เลือกลีก"></div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap" id="gamesView">
+    <div class="toolbar">
+      <span id="count"></span>
+      <label class="toggle"><input type="checkbox" id="picksOnly"> เฉพาะคู่ที่มีคำแนะนำ</label>
+    </div>
+    <div id="list"></div>
+    <p class="disclaimer">ผลวิเคราะห์เป็นการประมาณทางสถิติจากผลงานย้อนหลัง ไม่รวมข่าวผู้เล่นเจ็บ ตัวจริง หรือสภาพอากาศ และไม่รับประกันผล</p>
+  </div>
+
+  <div class="wrap" id="manualView" hidden>
+    <form class="card" id="manualForm" autocomplete="off">
+      <div class="field">
+        <label for="m-league">ลีก</label>
+        <select id="m-league"></select>
+      </div>
+      <div class="grid2">
+        <div class="teambox">
+          <h4>ทีมเหย้า</h4>
+          <div class="field"><label for="m-home">ชื่อทีม</label><input id="m-home" value="ทีมเหย้า"></div>
+          <div class="grid2">
+            <div class="field"><label for="m-hf">ได้เฉลี่ย/เกม</label><input class="num" id="m-hf" type="number" step="0.1" inputmode="decimal"></div>
+            <div class="field"><label for="m-ha">เสียเฉลี่ย/เกม</label><input class="num" id="m-ha" type="number" step="0.1" inputmode="decimal"></div>
+          </div>
+        </div>
+        <div class="teambox">
+          <h4>ทีมเยือน</h4>
+          <div class="field"><label for="m-away">ชื่อทีม</label><input id="m-away" value="ทีมเยือน"></div>
+          <div class="grid2">
+            <div class="field"><label for="m-af">ได้เฉลี่ย/เกม</label><input class="num" id="m-af" type="number" step="0.1" inputmode="decimal"></div>
+            <div class="field"><label for="m-aa">เสียเฉลี่ย/เกม</label><input class="num" id="m-aa" type="number" step="0.1" inputmode="decimal"></div>
+          </div>
+        </div>
+      </div>
+      <div class="field" style="max-width: 200px">
+        <label for="m-n">จำนวนนัดที่ใช้คิดค่าเฉลี่ย</label>
+        <input class="num" id="m-n" type="number" min="1" max="82" value="10" inputmode="numeric">
+      </div>
+    </form>
+    <div class="card" id="manualResult"></div>
+    <p class="disclaimer">ใส่ตัวเลขจากเว็บสถิติที่คุณใช้ ระบบจะปรับค่าเข้าหาค่าเฉลี่ยลีกเมื่อจำนวนนัดน้อย</p>
+  </div>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------------------------------------------------------------- config
+  // [ชื่อ, กีฬา, โมเดล, ค่าเฉลี่ยต่อทีม, SD สกอร์รวม, ได้เปรียบเจ้าบ้าน, dispersion, prior, ระยะไลน์, ไลน์มาตรฐาน]
+  const LEAGUES = {"nba":["NBA","basketball","normal",114.5,18,0.012,0,4,5,[]],"wnba":["WNBA","basketball","normal",82,15,0.012,0,4,5,[]],"ncaab":["NCAA บาสชาย","basketball","normal",72.5,15.5,0.02,0,4,5,[]],"ncaaw":["NCAA บาสหญิง","basketball","normal",66,15,0.02,0,4,5,[]],"epl":["พรีเมียร์ลีก อังกฤษ","soccer","poisson",1.42,0,0.1,0,6,0,[1.5,2.5,3.5]],"championship":["แชมเปียนชิพ อังกฤษ","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5]],"laliga":["ลาลีกา สเปน","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5]],"seriea":["เซเรียอา อิตาลี","soccer","poisson",1.35,0,0.1,0,6,0,[1.5,2.5,3.5]],"bundesliga":["บุนเดสลีกา เยอรมนี","soccer","poisson",1.55,0,0.1,0,6,0,[1.5,2.5,3.5]],"ligue1":["ลีกเอิง ฝรั่งเศส","soccer","poisson",1.4,0,0.1,0,6,0,[1.5,2.5,3.5]],"eredivisie":["เอเรอดิวิซี เนเธอร์แลนด์","soccer","poisson",1.55,0,0.1,0,6,0,[1.5,2.5,3.5]],"ucl":["ยูฟ่า แชมเปียนส์ลีก","soccer","poisson",1.5,0,0.08,0,6,0,[1.5,2.5,3.5]],"uel":["ยูฟ่า ยูโรปาลีก","soccer","poisson",1.4,0,0.08,0,6,0,[1.5,2.5,3.5]],"mls":["MLS สหรัฐฯ","soccer","poisson",1.5,0,0.1,0,6,0,[1.5,2.5,3.5]],"jleague":["เจลีก ญี่ปุ่น","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5]],"thaileague":["ไทยลีก 1","soccer","poisson",1.4,0,0.1,0,6,0,[1.5,2.5,3.5]],"mlb":["MLB","baseball","negbin",4.45,0,0.02,3.8,8,0,[7.5,8.5,9.5]],"ncaabase":["NCAA เบสบอล","baseball","negbin",6.5,0,0.03,3,6,0,[10.5,12.5,14.5]],"nfl":["NFL","football","normal",22.5,13.5,0.025,0,3,3,[]],"ncaaf":["NCAA อเมริกันฟุตบอล","football","normal",28,16.5,0.025,0,3,3,[]]};
+  const LG = k => { const a = LEAGUES[k]; return a && { key: k, name: a[0], sport: a[1], model: a[2], avg: a[3], sd: a[4], home: a[5], disp: a[6], prior: a[7], step: a[8], lines: a[9] }; };
+  const SPORTS = [
+    { key: "all", label: "ทั้งหมด" },
+    { key: "basketball", label: "บาสเกตบอล" },
+    { key: "soccer", label: "ฟุตบอล" },
+    { key: "baseball", label: "เบสบอล" },
+    { key: "football", label: "อเมริกันฟุตบอล" },
+  ];
+  const UNIT = { soccer: "ประตู", baseball: "รัน", basketball: "แต้ม", football: "แต้ม" };
+  const DEFAULT_ODDS = -110, LEAN = 0.03, STRONG = 0.06;
+
+  // ---------------------------------------------------------------- stats
+  function erf(x) {
+    const s = Math.sign(x); x = Math.abs(x);
+    const t = 1 / (1 + 0.3275911 * x);
+    const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+    return s * y;
+  }
+  const ncdf = x => 0.5 * (1 + erf(x / Math.SQRT2));
+  function lgamma(z) {
+    const g = 7, c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059,
+      12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+    if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - lgamma(1 - z);
+    z -= 1; let x = c[0];
+    for (let i = 1; i < g + 2; i++) x += c[i] / (z + i);
+    const t = z + g + 0.5;
+    return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+  }
+  const poisson = (k, l) => l <= 0 ? (k === 0 ? 1 : 0) : Math.exp(k * Math.log(l) - l - lgamma(k + 1));
+  const negbin = (k, mu, r) => {
+    if (mu <= 0) return k === 0 ? 1 : 0;
+    const p = r / (r + mu);
+    return Math.exp(lgamma(k + r) - lgamma(r) - lgamma(k + 1) + r * Math.log(p) + k * Math.log(1 - p));
+  };
+  function makeDist(pmf, maxK) { const d = []; let s = 0; for (let k = 0; k <= maxK; k++) { d.push(pmf(k)); s += d[k]; } return d.map(x => x / s); }
+  function convolve(a, b) { const o = new Array(a.length + b.length - 1).fill(0); a.forEach((x, i) => b.forEach((y, j) => { o[i + j] += x * y; })); return o; }
+  const isWhole = x => Math.abs(x - Math.round(x)) < 1e-9;
+  function lineProbs(m, line) {
+    if (m.dist) {
+      let over = 0; m.dist.forEach((p, k) => { if (k > line + 1e-9) over += p; });
+      const push = isWhole(line) && m.dist[Math.round(line)] ? m.dist[Math.round(line)] : 0;
+      return { over, push, under: Math.max(0, 1 - over - push) };
+    }
+    const mu = m.total, sd = m.sd;
+    if (isWhole(line)) {
+      const over = 1 - ncdf((line + 0.5 - mu) / sd), under = ncdf((line - 0.5 - mu) / sd);
+      return { over, under, push: Math.max(0, 1 - over - under) };
+    }
+    const over = 1 - ncdf((line - mu) / sd);
+    return { over, under: 1 - over, push: 0 };
+  }
+  const decimal = o => o >= 100 ? 1 + o / 100 : o <= -100 ? 1 + 100 / Math.abs(o) : 2;
+  function evalLine(m, line, oo, uo) {
+    const p = lineProbs(m, line);
+    const cond = x => p.push < 1 ? x / (1 - p.push) : 0;
+    const eo = cond(p.over) - 1 / decimal(oo), eu = cond(p.under) - 1 / decimal(uo);
+    const best = eo >= eu ? "over" : "under", edge = Math.max(eo, eu);
+    let strength = "ผ่าน", pick = null;
+    if (edge >= STRONG) { strength = "แนะนำ"; pick = best; } else if (edge >= LEAN) { strength = "เอนเอียง"; pick = best; }
+    const gapLimit = m.sd ? m.sd * 0.6 : (m.sport === "soccer" ? 0.8 : 2);
+    const bigGap = Math.abs(m.total - line) >= gapLimit;
+    if (strength === "แนะนำ" && (m.quality === "ต่ำ" || (m.isMarketLine && bigGap))) strength = "เอนเอียง";
+    const ev = best === "over" ? p.over * (decimal(oo) - 1) - p.under : p.under * (decimal(uo) - 1) - p.over;
+    return { ...p, eo, eu, pick, strength, ev, bigGap };
+  }
+
+  // ---------------------------------------------------------------- utils
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const pct = (x, d = 0) => (x * 100).toFixed(d) + "%";
+  const fmt = (x, d = 1) => x == null || isNaN(x) ? "–" : Number(x).toFixed(d);
+  const fmtLine = x => (Math.round(x * 10) / 10).toString();
+  const fmtOdds = o => o == null ? "–" : (o > 0 ? "+" : "") + Math.round(o);
+  const TZ = "Asia/Bangkok";
+  const dayKey = d => new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+  const dayLabel = d => new Intl.DateTimeFormat("th-TH", { timeZone: TZ, weekday: "long", day: "numeric", month: "long" }).format(d);
+  const timeLabel = d => new Intl.DateTimeFormat("th-TH", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
+  function ago(iso) {
+    const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (mins < 1) return "เมื่อสักครู่";
+    if (mins < 60) return mins + " นาทีที่แล้ว";
+    const h = Math.round(mins / 60);
+    if (h < 48) return h + " ชั่วโมงที่แล้ว";
+    return Math.round(h / 24) + " วันที่แล้ว";
+  }
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("st." + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("st." + k, JSON.stringify(v)); } catch {} },
+  };
+
+  // ---------------------------------------------------------------- state
+  const state = {
+    slates: [], loaded: false, error: null,
+    tab: store.get("tab", "games"), sport: store.get("sport", "all"), league: "all",
+    picksOnly: store.get("picksOnly", false),
+    open: new Set(), lines: {},   // id -> {line, oo, uo}
+  };
+
+  // ---------------------------------------------------------------- shared views
+  function pickPill(pick, strength, hasLine) {
+    if (!hasLine) return `<span class="pill noline">ไม่มีไลน์</span>`;
+    if (!pick) return `<span class="pill pass">ผ่าน</span>`;
+    const w = pick === "over" ? "สูง" : "ต่ำ";
+    return `<span class="pill ${pick}${strength === "แนะนำ" ? " strong" : ""}">${esc(strength)} ${w}</span>`;
+  }
+
+  function lineToolHTML(id, m, cfg) {
+    return `<div class="sec linetool" data-tool="${esc(id)}">
+      <h3>เทียบไลน์สกอร์รวม</h3>
+      <div class="stepper">
+        <span class="ctl">
+          <button type="button" data-act="dec" aria-label="ลดไลน์">−</button>
+          <input type="number" step="0.5" inputmode="decimal" data-f="line" id="line-${esc(id)}" aria-label="ไลน์สกอร์รวม" value="${fmtLine(cfg.line)}">
+          <button type="button" data-act="inc" aria-label="เพิ่มไลน์">+</button>
+        </span>
+        <span class="odds">
+          <label>สูง <input type="number" inputmode="numeric" data-f="oo" id="oo-${esc(id)}" value="${Math.round(cfg.oo)}"></label>
+          <label>ต่ำ <input type="number" inputmode="numeric" data-f="uo" id="uo-${esc(id)}" value="${Math.round(cfg.uo)}"></label>
+        </span>
+      </div>
+      <div class="quick">${quickLines(m).map(x => `<button type="button" data-line="${x.v}" class="${x.mk ? "mk" : ""}">${fmtLine(x.v)}${x.mk ? " · เจ้ามือ" : ""}</button>`).join("")}</div>
+      <div data-out></div>
+    </div>`;
+  }
+
+  function quickLines(m) {
+    const out = [];
+    const lg = LG(m.league);
+    const mk = m.market && m.market.line;
+    if (lg && lg.lines.length) lg.lines.forEach(v => out.push({ v, mk: v === mk }));
+    else {
+      const c = mk ?? Math.floor(m.total) + 0.5, s = lg ? lg.step : 3;
+      [c - s, c, c + s].forEach(v => out.push({ v, mk: v === mk }));
+    }
+    if (mk != null && !out.some(x => x.v === mk)) out.push({ v: mk, mk: true });
+    return out.sort((a, b) => a.v - b.v);
+  }
+
+  function lineOutHTML(m, cfg) {
+    const r = evalLine({ ...m, isMarketLine: m.market && cfg.line === m.market.line }, cfg.line, cfg.oo, cfg.uo);
+    const unit = UNIT[m.sport] || "แต้ม";
+    const o = Math.max(r.over, 0), p = Math.max(r.push, 0), u = Math.max(r.under, 0);
+    const bar = `<div class="bar" role="img" aria-label="สูง ${pct(o, 1)} ต่ำ ${pct(u, 1)}">
+        <div class="o" style="flex-basis:${o * 100}%">สูง ${pct(o)}</div>
+        ${p > 0.004 ? `<div class="p" style="flex-basis:${p * 100}%">${pct(p)}</div>` : ""}
+        <div class="u" style="flex-basis:${u * 100}%">${pct(u)} ต่ำ</div></div>
+      <div class="legend"><span>edge สูง <b class="num">${(r.eo * 100).toFixed(1)}%</b></span>${p > 0.004 ? `<span>เสมอไลน์ (คืนเงิน) ${pct(p, 1)}</span>` : ""}<span>edge ต่ำ <b class="num">${(r.eu * 100).toFixed(1)}%</b></span></div>`;
+    let v;
+    if (r.pick) {
+      const w = r.pick === "over" ? "สูง (Over)" : "ต่ำ (Under)";
+      const prob = r.pick === "over" ? r.over : r.under;
+      v = `<div class="verdict ${r.pick}"><b>${esc(r.strength)} ${w} ${fmtLine(cfg.line)}</b>
+        <small>โอกาส ${pct(prob, 1)} · ผลตอบแทนคาดหวัง ${(r.ev * 100 >= 0 ? "+" : "") + (r.ev * 100).toFixed(1)}% ต่อหน่วย</small>
+        ${r.bigGap && m.market ? `<small>โมเดลต่างจากไลน์มาก ตรวจข่าวก่อนตัดสินใจ</small>` : ""}</div>`;
+    } else {
+      v = `<div class="verdict"><b>ผ่าน</b><small>ไม่มีความได้เปรียบพอที่ไลน์ ${fmtLine(cfg.line)} ${unit} (ต้องได้เปรียบอย่างน้อย 3%)</small></div>`;
+    }
+    return bar + v;
+  }
+
+  function projHTML(m, homeName, awayName, ex) {
+    const unit = UNIT[m.sport] || "แต้ม";
+    const nd = m.sport === "soccer" || m.sport === "baseball" ? 2 : 1;
+    let range = "";
+    if (ex && ex.market_total != null) {
+      const w = ex.model_weight ?? 0.4;
+      range += `<div class="range">โมเดลล้วน <b class="num">${fmt(ex.raw_total, nd)}</b> · ไลน์และราคาเจ้ามือบอก <b class="num">${fmt(ex.market_total, nd)}</b> → ผสม ${Math.round(w * 100)}/${Math.round((1 - w) * 100)}</div>`;
+    }
+    if (m.sd) range += `<div class="range">ช่วงที่น่าจะเป็น 80%: <b class="num">${Math.round(m.total - 1.28 * m.sd)} – ${Math.round(m.total + 1.28 * m.sd)}</b> ${unit} · ผลต่างคาดการณ์ ${esc(homeName)} ${(m.home - m.away >= 0 ? "+" : "") + fmt(m.home - m.away, 1)}</div>`;
+    return `<div class="sec"><h3>ผลคาดการณ์</h3>
+      <div class="proj">
+        <div class="t"><div class="n">${esc(homeName)} (เหย้า)</div><div class="v">${fmt(m.home, nd)}</div></div>
+        <div class="mid"><div class="v">${fmt(m.total, nd)}</div><div class="n">สกอร์รวม (${unit})</div></div>
+        <div class="t r"><div class="n">${esc(awayName)} (เยือน)</div><div class="v">${fmt(m.away, nd)}</div></div>
+      </div>${range}</div>`;
+  }
+
+  function extrasHTML(m, ex, homeName, awayName) {
+    if (!ex) return "";
+    const parts = [];
+    if (m.sport === "soccer" && ex.p_draw != null) {
+      parts.push(`<div class="wdl" role="img" aria-label="ชนะ เสมอ แพ้">
+        <div class="h" style="flex-basis:${ex.p_home_win * 100}%">${pct(ex.p_home_win)}</div>
+        <div class="d" style="flex-basis:${ex.p_draw * 100}%">${pct(ex.p_draw)}</div>
+        <div class="a" style="flex-basis:${ex.p_away_win * 100}%">${pct(ex.p_away_win)}</div></div>
+        <div class="legend"><span>${esc(homeName)} ชนะ</span><span>เสมอ</span><span>${esc(awayName)} ชนะ</span></div>
+        <div>ยิงได้ทั้งสองทีม (BTTS): <b class="num">${pct(ex.p_btts)}</b></div>`);
+    } else if (ex.p_home_win != null) {
+      parts.push(`<div>โอกาสชนะ: ${esc(homeName)} <b class="num">${pct(ex.p_home_win)}</b> · ${esc(awayName)} <b class="num">${pct(ex.p_away_win)}</b></div>`);
+    }
+    if (ex.top_scores && ex.top_scores.length) {
+      parts.push(`<div><div class="src" style="margin-bottom:4px">สกอร์ที่น่าจะเป็น (เหย้า-เยือน)</div><div class="scores">${ex.top_scores.slice(0, 5).map(s => `<span>${esc(s.score)}<i>${pct(s.p)}</i></span>`).join("")}</div></div>`);
+    }
+    if (m.sport === "soccer" && m.dist) {
+      const vals = [0, 1, 2, 3, 4, 5, 6].map(k => m.dist[k] || 0);
+      vals.push(Math.max(0, 1 - vals.reduce((a, b) => a + b, 0)));
+      const mx = Math.max(...vals);
+      parts.push(`<div><div class="src" style="margin-bottom:4px">จำนวนประตูรวม</div><div class="histo">${vals.map((v, k) =>
+        `<div class="col"><span>${pct(v)}</span><div class="b" style="height:${(v / mx) * 100}%"></div><span class="k">${k === 7 ? "7+" : k}</span></div>`).join("")}</div></div>`);
+    }
+    return parts.length ? `<div class="sec extras"><h3>ข้อมูลเพิ่มเติม</h3>${parts.join("")}</div>` : "";
+  }
+
+  function notesHTML(notes) {
+    return notes && notes.length ? `<div class="sec"><h3>ข้อควรระวัง</h3><ul class="notes">${notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul></div>` : "";
+  }
+
+  function bindLineTool(root, m, id, initial) {
+    const tool = root.querySelector(`[data-tool="${CSS.escape(id)}"]`);
+    if (!tool) return;
+    const cfg = state.lines[id] || (state.lines[id] = { ...initial });
+    const out = tool.querySelector("[data-out]");
+    const lineIn = tool.querySelector('[data-f="line"]');
+    const ooIn = tool.querySelector('[data-f="oo"]'), uoIn = tool.querySelector('[data-f="uo"]');
+    const step = m.sport === "basketball" || m.sport === "football" ? 1 : 0.5;
+    const draw = () => { out.innerHTML = lineOutHTML(m, cfg); };
+    const readOdds = (el, fb) => { const v = parseFloat(el.value); return isFinite(v) && Math.abs(v) >= 100 ? v : fb; };
+    tool.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.act === "dec") cfg.line = Math.max(0, cfg.line - step);
+      else if (b.dataset.act === "inc") cfg.line += step;
+      else if (b.dataset.line) {
+        cfg.line = parseFloat(b.dataset.line);
+        if (m.market && cfg.line === m.market.line) {
+          cfg.oo = m.market.over_odds ?? DEFAULT_ODDS; cfg.uo = m.market.under_odds ?? DEFAULT_ODDS;
+        } else { cfg.oo = DEFAULT_ODDS; cfg.uo = DEFAULT_ODDS; }
+        ooIn.value = Math.round(cfg.oo); uoIn.value = Math.round(cfg.uo);
+      } else return;
+      lineIn.value = fmtLine(cfg.line); draw();
+    });
+    tool.addEventListener("input", e => {
+      if (e.target === lineIn) { const v = parseFloat(lineIn.value); if (isFinite(v) && v >= 0) cfg.line = v; }
+      if (e.target === ooIn) cfg.oo = readOdds(ooIn, DEFAULT_ODDS);
+      if (e.target === uoIn) cfg.uo = readOdds(uoIn, DEFAULT_ODDS);
+      draw();
+    });
+    draw();
+  }
+
+  // ---------------------------------------------------------------- games view
+  function allMatches() {
+    const out = [];
+    for (const s of state.slates) {
+      for (const g of s.matches || []) out.push({ ...g, league: s.league, leagueName: s.name, sport: s.sport, unit: s.unit, startDate: new Date(g.start) });
+    }
+    return out.sort((a, b) => a.startDate - b.startDate);
+  }
+
+  function renderChips(matches) {
+    const bySport = {};
+    matches.forEach(m => { bySport[m.sport] = (bySport[m.sport] || 0) + 1; });
+    $("#sportChips").innerHTML = SPORTS.map(s => {
+      const c = s.key === "all" ? matches.length : (bySport[s.key] || 0);
+      return `<button class="chip" type="button" data-sport="${s.key}" aria-pressed="${state.sport === s.key}">${s.label}<span class="c">${c}</span></button>`;
+    }).join("");
+    const lgs = {};
+    matches.filter(m => state.sport === "all" || m.sport === state.sport).forEach(m => { lgs[m.league] = lgs[m.league] || { name: m.leagueName, n: 0 }; lgs[m.league].n++; });
+    const keys = Object.keys(lgs);
+    if (state.sport === "all" || keys.length < 2) { $("#leagueChips").hidden = true; state.league = "all"; return; }
+    if (state.league !== "all" && !lgs[state.league]) state.league = "all";
+    $("#leagueChips").hidden = false;
+    $("#leagueChips").innerHTML = `<button class="chip" type="button" data-league="all" aria-pressed="${state.league === "all"}">ทุกลีก</button>` +
+      keys.map(k => `<button class="chip" type="button" data-league="${esc(k)}" aria-pressed="${state.league === k}">${esc(lgs[k].name)}<span class="c">${lgs[k].n}</span></button>`).join("");
+  }
+
+  function matchModel(g) {
+    return { league: g.league, sport: g.sport, total: g.proj.total, home: g.proj.home, away: g.proj.away, sd: g.proj.sd, dist: g.dist, market: g.market, quality: g.quality };
+  }
+
+  function cardHTML(g) {
+    const unit = UNIT[g.sport] || "แต้ม";
+    const mk = g.market;
+    const started = g.startDate.getTime() <= Date.now();
+    const nd = g.sport === "soccer" || g.sport === "baseball" ? 2 : 1;
+    const team = (t, side) => `<div class="teamrow"><span class="side">${side}</span><span class="nm">${esc(t.name)}</span>${t.record ? `<span class="rec">${esc(t.record)}</span>` : ""}</div>`;
+    const q = g.quality === "ต่ำ" ? `<span class="pill pass">ข้อมูลน้อย</span>` : "";
+    return `<details class="match" data-id="${esc(g.league + ":" + g.id)}"${state.open.has(g.league + ":" + g.id) ? " open" : ""}>
+      <summary>
+        <div class="teams">
+          <div class="meta"><span class="time">${timeLabel(g.startDate)}</span><span>${esc(g.leagueName)}</span>${started ? `<span class="pill pass">เริ่มแล้ว</span>` : ""}${q}</div>
+          ${team(g.away, "เยือน")}${team(g.home, "เหย้า")}
+        </div>
+        <div class="board">
+          <span class="lbl">คาดสกอร์รวม</span>
+          <span class="total">${fmt(g.proj.total, nd)}</span>
+          ${mk ? `<span class="lineline">ไลน์ <b>${fmtLine(mk.line)}</b></span>` : ""}
+          ${pickPill(g.pick, g.strength, !!mk)}
+        </div>
+      </summary>
+      <div class="body"></div>
+    </details>`;
+  }
+
+  function bodyHTML(g) {
+    const m = matchModel(g);
+    const unit = UNIT[g.sport] || "แต้ม";
+    const nd = g.sport === "soccer" || g.sport === "baseball" ? 2 : 1;
+    const row = (t, side) => `<tr><td>${esc(t.name)} <span class="src">${side}</span></td><td>${t.n}</td><td>${fmt(t.for, nd)}</td><td>${fmt(t.against, nd)}</td><td>${fmt(t.avg_total, nd)}</td><td>${fmt(t.last5, nd)}</td></tr>`;
+    const id = g.league + ":" + g.id;
+    const mk = g.market;
+    const init = { line: mk ? mk.line : quickLines(m)[Math.floor(quickLines(m).length / 2)].v,
+      oo: mk && mk.over_odds != null ? mk.over_odds : DEFAULT_ODDS, uo: mk && mk.under_odds != null ? mk.under_odds : DEFAULT_ODDS };
+    const cfg = state.lines[id] || init;
+    return `${projHTML(m, g.home.name, g.away.name, g.extras)}
+      ${lineToolHTML(id, m, cfg)}
+      <div class="sec"><h3>ฟอร์มล่าสุด (${unit}/เกม, ถ่วงน้ำหนักเกมล่าสุด)</h3>
+        <div class="tablewrap"><table class="form"><thead><tr><th>ทีม</th><th>นัด</th><th>ได้</th><th>เสีย</th><th>รวมเฉลี่ย</th><th>5 นัดหลัง</th></tr></thead>
+        <tbody>${row(g.home, "เหย้า")}${row(g.away, "เยือน")}</tbody></table></div>
+        <div class="src" style="margin-top:6px">ความน่าเชื่อถือของข้อมูล: ${esc(g.quality)}${g.venue ? " · สนาม " + esc(g.venue) : ""}</div>
+      </div>
+      ${extrasHTML(m, g.extras, g.home.name, g.away.name)}
+      ${notesHTML(g.notes)}
+      <div class="src">${mk ? `ราคาจาก ${esc(mk.provider)}: สูง ${fmtOdds(mk.over_odds)} / ต่ำ ${fmtOdds(mk.under_odds)}${mk.details ? " · แฮนดิแคป " + esc(mk.details) : ""}` : "ยังไม่มีราคาจากเจ้ามือ กำหนดไลน์เองได้ด้านบน"}</div>`;
+  }
+
+  function renderGames() {
+    const list = $("#list");
+    const all = allMatches();
+    renderChips(all);
+    const upd = state.slates.map(s => s.updated_at).filter(Boolean).sort()[0];
+    const updEl = $("#updated");
+    if (upd) {
+      const hrs = (Date.now() - new Date(upd).getTime()) / 3.6e6;
+      updEl.textContent = "อัปเดตข้อมูล " + ago(upd);
+      updEl.classList.toggle("stale", hrs > 12);
+    } else if (state.loaded) updEl.textContent = "ยังไม่มีข้อมูล";
+
+    if (!state.loaded) {
+      list.innerHTML = state.error ? `<div class="empty"><b>เชื่อมต่อฐานข้อมูลไม่ได้</b><span>${esc(state.error)}</span><span>ยังใช้แท็บ "คำนวณเอง" ได้ตามปกติ</span></div>`
+        : `<div class="empty"><b>กำลังโหลดนัดแข่ง…</b><span>รายการนัดที่ยังไม่เริ่มพร้อมผลวิเคราะห์จะแสดงที่นี่</span></div>`;
+      $("#count").textContent = "";
+      return;
+    }
+    const now = Date.now();
+    let ms = all.filter(m => m.startDate.getTime() > now - 3 * 3600e3);
+    const hiddenStarted = ms.filter(m => m.startDate.getTime() <= now).length;
+    ms = ms.filter(m => m.startDate.getTime() > now);
+    ms = ms.filter(m => (state.sport === "all" || m.sport === state.sport) && (state.league === "all" || m.league === state.league));
+    if (state.picksOnly) ms = ms.filter(m => m.pick);
+    const picks = ms.filter(m => m.pick).length;
+    $("#count").textContent = `${ms.length} นัด · มีคำแนะนำ ${picks} นัด` + (hiddenStarted ? ` · ซ่อน ${hiddenStarted} นัดที่เริ่มแล้ว` : "");
+
+    if (!all.length) {
+      list.innerHTML = `<div class="empty"><b>ยังไม่มีข้อมูลนัดแข่ง</b><span>บอก Claude ว่า "อัปเดตป้ายสกอร์รวม" เพื่อดึงนัดล่าสุด หรือใช้แท็บ "คำนวณเอง"</span></div>`;
+      return;
+    }
+    if (!ms.length) {
+      list.innerHTML = `<div class="empty"><b>ไม่มีนัดที่ตรงกับตัวกรอง</b><span>${state.picksOnly ? "ลองปิด \"เฉพาะคู่ที่มีคำแนะนำ\" หรือเลือกกีฬาอื่น" : "อาจอยู่ในช่วงพักลีก หรือข้อมูลยังไม่อัปเดต ลองเลือกกีฬาอื่น"}</span></div>`;
+      return;
+    }
+    const groups = new Map();
+    ms.forEach(m => { const k = dayKey(m.startDate); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(m); });
+    list.innerHTML = [...groups.values()].map(g => `<section class="day"><h2>${dayLabel(g[0].startDate)}</h2>${g.map(cardHTML).join("")}</section>`).join("");
+    const byId = new Map(ms.map(m => [m.league + ":" + m.id, m]));
+    list.querySelectorAll("details.match").forEach(d => {
+      const g = byId.get(d.dataset.id);
+      const fill = () => {
+        const body = d.querySelector(".body");
+        if (!body.dataset.filled) {
+          body.innerHTML = bodyHTML(g); body.dataset.filled = "1";
+          const m = matchModel(g), mk = g.market;
+          const ql = quickLines(m);
+          bindLineTool(body, m, d.dataset.id, { line: mk ? mk.line : ql[Math.floor(ql.length / 2)].v,
+            oo: mk && mk.over_odds != null ? mk.over_odds : DEFAULT_ODDS, uo: mk && mk.under_odds != null ? mk.under_odds : DEFAULT_ODDS });
+        }
+      };
+      if (d.open) fill();
+      d.addEventListener("toggle", () => { if (d.open) { state.open.add(d.dataset.id); fill(); } else state.open.delete(d.dataset.id); });
+    });
+  }
+
+  // ---------------------------------------------------------------- manual view
+  const manual = { league: store.get("m.league", "nba") };
+  function fillLeagueSelect() {
+    const sel = $("#m-league");
+    sel.innerHTML = SPORTS.slice(1).map(s => `<optgroup label="${s.label}">${Object.keys(LEAGUES).filter(k => LEAGUES[k][1] === s.key)
+      .map(k => `<option value="${k}">${esc(LEAGUES[k][0])}</option>`).join("")}</optgroup>`).join("");
+    sel.value = LEAGUES[manual.league] ? manual.league : "nba";
+  }
+  function setManualDefaults(force) {
+    const lg = LG($("#m-league").value);
+    const d = lg.sport === "soccer" ? [1.6, 1.1, 1.2, 1.5] : lg.sport === "baseball" ? [4.8, 4.2, 4.3, 4.6] :
+      lg.key === "nba" ? [117, 112, 113, 116] : lg.key === "nfl" ? [24, 20, 21, 23] : [lg.avg * 1.04, lg.avg * 0.97, lg.avg, lg.avg * 1.02];
+    ["#m-hf", "#m-ha", "#m-af", "#m-aa"].forEach((s, i) => { if (force || !$(s).value) $(s).value = +d[i].toFixed(1); });
+  }
+  function computeManual() {
+    const lg = LG($("#m-league").value);
+    const num = s => { const v = parseFloat($(s).value); return isFinite(v) && v >= 0 ? v : null; };
+    const hf = num("#m-hf"), ha = num("#m-ha"), af = num("#m-af"), aa = num("#m-aa");
+    const n = Math.max(1, Math.round(num("#m-n") || 10));
+    const hn = $("#m-home").value.trim() || "ทีมเหย้า", an = $("#m-away").value.trim() || "ทีมเยือน";
+    const res = $("#manualResult");
+    if ([hf, ha, af, aa].some(v => v == null)) { res.innerHTML = `<div class="empty"><b>กรอกค่าเฉลี่ยให้ครบทั้ง 4 ช่อง</b></div>`; return; }
+    const k = lg.prior, avg = lg.avg, shrink = x => (x * n + avg * k) / (n + k);
+    const home = Math.max(shrink(hf) * shrink(aa) / avg * (1 + lg.home), 0.05);
+    const away = Math.max(shrink(af) * shrink(ha) / avg * (1 - lg.home), 0.05);
+    const m = { league: lg.key, sport: lg.sport, home, away, total: home + away, sd: null, dist: null, market: null, quality: n >= 8 ? "สูง" : n >= 4 ? "ปานกลาง" : "ต่ำ" };
+    let ex = null;
+    if (lg.model === "normal") m.sd = lg.sd * Math.sqrt(1 + 1 / (n + lg.prior));
+    else {
+      const maxK = lg.model === "poisson" ? 12 : 30;
+      const pmf = lg.model === "poisson" ? (mu => kk => poisson(kk, mu)) : (mu => kk => negbin(kk, mu, lg.disp));
+      const dh = makeDist(pmf(home), maxK), da = makeDist(pmf(away), maxK);
+      m.dist = convolve(dh, da);
+      let ph = 0, pa = 0; const sc = [];
+      dh.forEach((x, i) => da.forEach((y, j) => { if (i > j) ph += x * y; else if (j > i) pa += x * y; if (i < 8 && j < 8) sc.push({ score: `${i}-${j}`, p: x * y }); }));
+      sc.sort((a, b) => b.p - a.p);
+      ex = lg.sport === "soccer" ? { p_home_win: ph, p_away_win: pa, p_draw: Math.max(0, 1 - ph - pa), p_btts: (1 - dh[0]) * (1 - da[0]), top_scores: sc.slice(0, 5) }
+        : { p_home_win: ph / (ph + pa), p_away_win: pa / (ph + pa), top_scores: sc.slice(0, 5) };
+    }
+    const id = "manual";
+    const ql = quickLines(m);
+    const prev = state.lines[id];
+    if (!prev || prev.league !== lg.key) state.lines[id] = { line: ql[Math.floor(ql.length / 2)].v, oo: DEFAULT_ODDS, uo: DEFAULT_ODDS, league: lg.key };
+    res.innerHTML = projHTML(m, hn, an) + lineToolHTML(id, m, state.lines[id]) + extrasHTML(m, ex, hn, an) +
+      (n < 4 ? notesHTML([`ใช้ข้อมูลเพียง ${n} นัด ผลอาจคลาดเคลื่อนสูง`]) : "");
+    bindLineTool(res, m, id, state.lines[id]);
+  }
+
+  // ---------------------------------------------------------------- wiring
+  function showTab(t) {
+    state.tab = t; store.set("tab", t);
+    $("#tab-games").setAttribute("aria-selected", t === "games");
+    $("#tab-manual").setAttribute("aria-selected", t === "manual");
+    $("#gamesView").hidden = t !== "games";
+    $("#manualView").hidden = t !== "manual";
+    $("#sportChips").hidden = t !== "games";
+    if (t !== "games") $("#leagueChips").hidden = true; else renderGames();
+    if (t === "manual") computeManual();
+  }
+  $("#tab-games").addEventListener("click", () => showTab("games"));
+  $("#tab-manual").addEventListener("click", () => showTab("manual"));
+  $("#sportChips").addEventListener("click", e => {
+    const b = e.target.closest("[data-sport]"); if (!b) return;
+    state.sport = b.dataset.sport; state.league = "all"; store.set("sport", state.sport); renderGames();
+  });
+  $("#leagueChips").addEventListener("click", e => {
+    const b = e.target.closest("[data-league]"); if (!b) return;
+    state.league = b.dataset.league; renderGames();
+  });
+  $("#picksOnly").checked = state.picksOnly;
+  $("#picksOnly").addEventListener("change", e => { state.picksOnly = e.target.checked; store.set("picksOnly", state.picksOnly); renderGames(); });
+
+  fillLeagueSelect(); setManualDefaults(true);
+  $("#m-league").addEventListener("change", e => { store.set("m.league", e.target.value); setManualDefaults(true); computeManual(); });
+  $("#manualForm").addEventListener("input", e => { if (e.target.id !== "m-league") computeManual(); });
+  $("#manualForm").addEventListener("submit", e => e.preventDefault());
+
+  showTab(state.tab === "manual" ? "manual" : "games");
+
+  // ---------------------------------------------------------------- data
+  let timer = setTimeout(() => {
+    if (!state.loaded) { state.error = "ฐานข้อมูลยังไม่ตอบกลับ ลองเปิดหน้านี้ใหม่ภายหลัง"; if (state.tab === "games") renderGames(); }
+  }, 10000);
+  (async () => {
+    const use = window.claude && window.claude.use;
+    const db = use ? await window.claude.use("db") : null;
+    if (!db) {
+      clearTimeout(timer);
+      state.error = "หน้านี้เปิดนอกแอป Claude จึงอ่านข้อมูลนัดแข่งไม่ได้";
+      if (state.tab === "games") renderGames();
+      return;
+    }
+    db.collection("slates").onSnapshot(snap => {
+      if (!snap.metadata.fromCache) clearTimeout(timer);
+      state.slates = snap.docs.map(d => d.data()).filter(Boolean);
+      state.loaded = true; state.error = null;
+      if (state.tab === "games") renderGames();
+    }, err => {
+      clearTimeout(timer);
+      if (!state.loaded) { state.error = "อ่านข้อมูลไม่สำเร็จ (" + err.code + ")"; if (state.tab === "games") renderGames(); }
+    });
+  })();
+})();
+</script>

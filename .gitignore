@@ -4,3 +4,4 @@ __pycache__/
 build/
 dist/
 .venv/
+web_data/

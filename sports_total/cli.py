@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import date, datetime, timedelta, timezone
 
@@ -101,7 +102,7 @@ def _run_analysis(args, client, league: League, matches: list[Match]) -> int:
         return 1
 
     analyzer = TotalAnalyzer(league, client, last_n=args.last, half_life=args.half_life,
-                             league_avg=args.league_avg)
+                             league_avg=args.league_avg, model_weight=args.model_weight)
     results = []
     for m in matches:
         try:
@@ -124,6 +125,18 @@ def _run_analysis(args, client, league: League, matches: list[Match]) -> int:
 def cmd_analyze(args, client) -> int:
     league, matches = _fetch_matches(args, client)
     return _run_analysis(args, client, league, matches)
+
+
+def cmd_export(args, client) -> int:
+    from .export import DEFAULT_PLAN, run_export
+    plan = DEFAULT_PLAN
+    if args.leagues:
+        plan = {}
+        for part in args.leagues.split(","):
+            key, _, days = part.strip().partition(":")
+            get_league(key)
+            plan[key] = int(days or 3)
+    return 0 if run_export(client, args.out_dir, plan, args.last) else 3
 
 
 def cmd_demo(args) -> int:
@@ -175,6 +188,8 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--over-odds", type=float, help="ราคาฝั่งสูงแบบอเมริกัน เช่น -110")
         sp.add_argument("--under-odds", type=float, help="ราคาฝั่งต่ำแบบอเมริกัน เช่น -110")
         sp.add_argument("--league-avg", type=float, help="คะแนนเฉลี่ยต่อทีมต่อเกมของลีก (แทนค่าตั้งต้น)")
+        sp.add_argument("--model-weight", type=float, default=0.4,
+                        help="น้ำหนักของโมเดลเมื่อมีไลน์เจ้ามือ 0-1 (ค่าเริ่มต้น 0.4, 1 = ใช้โมเดลล้วน)")
         sp.add_argument("--json", action="store_true", help="แสดงผลเป็น JSON")
 
     def add_form(sp):
@@ -197,6 +212,11 @@ def build_parser() -> argparse.ArgumentParser:
     add_model(d)
     add_form(d)
 
+    ex = sub.add_parser("export", help="ส่งออกผลวิเคราะห์ (JSON ต่อลีก) สำหรับหน้าเว็บ")
+    ex.add_argument("--out-dir", default="web_data", help="โฟลเดอร์ปลายทาง")
+    ex.add_argument("--leagues", help="ลีกที่ต้องการ เช่น nba:2,epl:7 (ลีก:จำนวนวัน)")
+    ex.add_argument("--last", type=int, default=10)
+
     mn = sub.add_parser("manual", help="วิเคราะห์จากค่าเฉลี่ยที่กรอกเอง (ไม่ต้องใช้อินเทอร์เน็ต)")
     mn.add_argument("league")
     mn.add_argument("--home", default="ทีมเหย้า")
@@ -217,6 +237,17 @@ def main(argv: list[str] | None = None) -> int:
             pass
     args = build_parser().parse_args(argv)
     try:
+        return _dispatch(args)
+    except BrokenPipeError:  # เช่น ส่งผลต่อให้ head แล้วถูกตัด
+        try:
+            sys.stdout = open(os.devnull, "w")
+        except OSError:
+            pass
+        return 0
+
+
+def _dispatch(args) -> int:
+    try:
         if args.cmd == "leagues":
             return cmd_leagues(args)
         if args.cmd == "demo":
@@ -226,6 +257,8 @@ def main(argv: list[str] | None = None) -> int:
         client = ESPNClient(timeout=args.timeout, use_cache=not args.no_cache)
         if args.cmd == "games":
             return cmd_games(args, client)
+        if args.cmd == "export":
+            return cmd_export(args, client)
         return cmd_analyze(args, client)
     except (KeyError, argparse.ArgumentTypeError) as e:
         print(f"ผิดพลาด: {e.args[0] if e.args else e}", file=sys.stderr)
