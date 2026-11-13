@@ -186,9 +186,15 @@ class TotalAnalyzer:
 
         # ---- ผสมกับตลาด: หาสกอร์รวมที่ไลน์+ราคาของเจ้ามือบอกไว้ แล้วถ่วงน้ำหนักกับโมเดล ----
         market = match.market
+        # ไม่มีราคาเจ้ามือแต่ผู้ใช้กรอกไลน์ -> ถือว่าไลน์/ราคาที่กรอกคือตลาด
+        anchor = market
+        if anchor is None and line is not None:
+            from .models import MarketTotal
+            anchor = MarketTotal("กำหนดเอง", line, over_odds if over_odds is not None else DEFAULT_ODDS,
+                                 under_odds if under_odds is not None else DEFAULT_ODDS)
         market_total = None
-        if market is not None and self.model_weight < 1.0:
-            market_total = self._market_total(h_exp, a_exp, sd, market)
+        if anchor is not None and self.model_weight < 1.0:
+            market_total = self._market_total(h_exp, a_exp, sd, anchor)
             target = self.model_weight * raw_total + (1 - self.model_weight) * market_total
             h_exp, a_exp = h_exp * target / raw_total, a_exp * target / raw_total
 
@@ -246,7 +252,7 @@ class TotalAnalyzer:
                 pick, strength = best, "เอนเอียง"
             # ข้อมูลน้อย หรือโมเดลต่างจากตลาดมากผิดปกติ -> ลดระดับความมั่นใจ
             big_gap = abs(raw_total - line) >= self._gap_threshold(sd)
-            if strength == "แนะนำ" and (quality == "ต่ำ" or (market is not None and big_gap)):
+            if strength == "แนะนำ" and (quality == "ต่ำ" or (anchor is not None and big_gap)):
                 strength = "เอนเอียง"
 
         notes = self._notes(match, hf, af, raw_total, sd, line)

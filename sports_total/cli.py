@@ -65,7 +65,8 @@ def cmd_leagues(args) -> int:
     for sport, lgs in by_sport.items():
         print(f"\n{SPORT_NAMES_TH[sport]}")
         for lg in lgs:
-            print(f"  {lg.key:<13} {lg.name_th}  (ESPN: {lg.sport}/{lg.slug})")
+            src = "EuroLeague API" if lg.provider == "euroleague" else f"ESPN: {lg.sport}/{lg.slug}"
+            print(f"  {lg.key:<13} {lg.name_th}  ({src})")
     print("\nลีกฟุตบอลอื่นของ ESPN: ใช้ soccer:<รหัส> เช่น soccer:por.1, soccer:sco.1")
     return 0
 

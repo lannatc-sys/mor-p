@@ -43,6 +43,7 @@ class League:
     default_lines: tuple[float, ...] = ()
     scoreboard_params: dict = field(default_factory=dict)
     history_slug: str = ""   # ดึงผลย้อนหลังของทีมจากลีกนี้แทน เช่น "all" = ทุกรายการ
+    provider: str = "espn"   # แหล่งข้อมูล: espn / euroleague (API ทางการของยูโรลีก)
 
     @property
     def unit_th(self) -> str:
@@ -72,8 +73,11 @@ LEAGUES: dict[str, League] = {lg.key: lg for lg in [
     # บาสเกตบอล
     _bb("nba", "nba", "NBA", 114.5, 18.0),
     _bb("wnba", "wnba", "WNBA", 82.0, 15.0),
-    # ESPN ไม่มีข้อมูลนัดของยูโรลีก ใช้ได้กับคำสั่ง manual / แท็บคำนวณเองเท่านั้น
-    _bb("euroleague", "euroleague", "ยูโรลีก (คำนวณเองเท่านั้น)", 82.0, 15.0, home=0.02),
+    # ยูโรลีก/ยูโรคัพ ดึงจาก API ทางการ (api-live.euroleague.net) — slug คือรหัสรายการ E / U
+    League("euroleague", BASKETBALL, "E", "ยูโรลีก", NORMAL, 86.5, total_sd=15.0, home_adv=0.018,
+           line_step=5.0, prior_games=4.0, provider="euroleague"),
+    League("eurocup", BASKETBALL, "U", "ยูโรคัพ", NORMAL, 83.5, total_sd=15.5, home_adv=0.018,
+           line_step=5.0, prior_games=4.0, provider="euroleague"),
     _bb("ncaab", "mens-college-basketball", "NCAA บาสชาย", 72.5, 15.5, home=0.02,
         params={"groups": "50", "limit": "400"}),
     _bb("ncaaw", "womens-college-basketball", "NCAA บาสหญิง", 66.0, 15.0, home=0.02,

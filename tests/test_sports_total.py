@@ -2,7 +2,7 @@ import io
 import json
 import unittest
 from contextlib import redirect_stdout
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sports_total import stats
 from sports_total.analyzer import TeamForm, TotalAnalyzer
@@ -123,11 +123,15 @@ class AnalyzerTests(unittest.TestCase):
         lg, m = self._match("nba")
         hf = TeamForm.manual(m.home, 125, 122, 10)
         af = TeamForm.manual(m.away, 124, 121, 10)
-        a = TotalAnalyzer(lg).evaluate(m, hf, af, line=235.5)
+        a = TotalAnalyzer(lg, model_weight=1.0).evaluate(m, hf, af, line=245.5)
         self.assertGreater(a.total, 240)
         self.assertEqual(a.pick, "over")
         self.assertEqual(a.strength, "แนะนำ")
-        b = TotalAnalyzer(lg).evaluate(m, hf, af, line=round(a.total) + 0.5)
+        b = TotalAnalyzer(lg, model_weight=1.0).evaluate(m, hf, af, line=round(a.total) + 0.5)
+        # ไม่มีราคาเจ้ามือ: ไลน์ที่กรอกถูกใช้เป็นตลาด -> ความได้เปรียบลดลง
+        c = TotalAnalyzer(lg).evaluate(m, hf, af, line=245.5)
+        self.assertIn("market_total", c.extras)
+        self.assertLess(c.main.edge_over, a.main.edge_over)
         self.assertEqual(b.strength, "ผ่าน")
 
     def test_market_blend(self):
@@ -173,6 +177,33 @@ class AnalyzerTests(unittest.TestCase):
         a = TotalAnalyzer(lg, c).analyze(m)
         self.assertEqual(a.home_form.n, 10)
         self.assertEqual(a.line_source, "เจ้ามือ (DemoBook)")
+
+
+class EuroLeagueTests(unittest.TestCase):
+    def test_parse_season(self):
+        from sports_total.euroleague import EuroLeagueSource
+        lg = get_league("euroleague")
+
+        def g(code, day, home, away, hs=0, as_=0, played=True):
+            return {"identifier": code, "played": played, "roundAlias": "Round 1",
+                    "utcDate": f"2026-11-{day:02d}T19:00:00Z", "venue": {"name": "Arena"},
+                    "local": {"club": {"code": home, "name": home + " FC", "tvCode": home}, "score": hs},
+                    "road": {"club": {"code": away, "name": away + " FC", "tvCode": away}, "score": as_}}
+
+        data = {"data": [g("E1", 1, "AAA", "BBB", 90, 80), g("E2", 5, "BBB", "AAA", 70, 75),
+                         g("E3", 20, "AAA", "BBB", played=False)]}
+
+        class Http:
+            def fetch_url(self, url, ttl=0):
+                return data if "E2026" in url else {"data": []}
+
+        src = EuroLeagueSource(Http())
+        ms = src.scoreboard(lg, date(2026, 11, 20))
+        self.assertEqual(len(ms), 1)
+        self.assertEqual((ms[0].home.id, ms[0].home.record, ms[0].state), ("AAA", "2-0", "pre"))
+        games = src.team_games(lg, "AAA", before=ms[0].start)
+        self.assertEqual([(x.points_for, x.points_against, x.is_home) for x in games],
+                         [(75, 70, False), (90, 80, True)])
 
 
 class CliTests(unittest.TestCase):

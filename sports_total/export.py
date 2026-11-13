@@ -20,7 +20,7 @@ US_EAST = timezone(timedelta(hours=-5))
 
 # ลีกที่ส่งออกโดยค่าเริ่มต้น และจำนวนวันที่ดูล่วงหน้า
 DEFAULT_PLAN = {
-    "nba": 2, "nfl": 7, "ncaaf": 7, "mlb": 2,
+    "nba": 2, "euroleague": 7, "eurocup": 7, "nfl": 7, "ncaaf": 7, "mlb": 2,
     "epl": 10, "laliga": 10, "seriea": 10, "bundesliga": 10, "ligue1": 10,
     "ucl": 14, "uel": 14, "nations": 7, "thaileague": 10, "jleague": 10,
 }

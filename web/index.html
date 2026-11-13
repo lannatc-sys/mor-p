@@ -270,7 +270,7 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
 
   // ---------------------------------------------------------------- config
   // [ชื่อ, กีฬา, โมเดล, ค่าเฉลี่ยต่อทีม, SD สกอร์รวม, ได้เปรียบเจ้าบ้าน, dispersion, prior, ระยะไลน์, ไลน์มาตรฐาน]
-  const LEAGUES = {"nba":["NBA","basketball","normal",114.5,18,0.012,0,4,5,[]],"wnba":["WNBA","basketball","normal",82,15,0.012,0,4,5,[]],"euroleague":["ยูโรลีก (คำนวณเองเท่านั้น)","basketball","normal",82,15,0.02,0,4,5,[]],"ncaab":["NCAA บาสชาย","basketball","normal",72.5,15.5,0.02,0,4,5,[]],"ncaaw":["NCAA บาสหญิง","basketball","normal",66,15,0.02,0,4,5,[]],"epl":["พรีเมียร์ลีก อังกฤษ","soccer","poisson",1.42,0,0.1,0,6,0,[1.5,2.5,3.5]],"championship":["แชมเปียนชิพ อังกฤษ","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5]],"laliga":["ลาลีกา สเปน","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5]],"seriea":["เซเรียอา อิตาลี","soccer","poisson",1.35,0,0.1,0,6,0,[1.5,2.5,3.5]],"bundesliga":["บุนเดสลีกา เยอรมนี","soccer","poisson",1.55,0,0.1,0,6,0,[1.5,2.5,3.5]],"ligue1":["ลีกเอิง ฝรั่งเศส","soccer","poisson",1.4,0,0.1,0,6,0,[1.5,2.5,3.5]],"eredivisie":["เอเรอดิวิซี เนเธอร์แลนด์","soccer","poisson",1.55,0,0.1,0,6,0,[1.5,2.5,3.5]],"ucl":["ยูฟ่า แชมเปียนส์ลีก","soccer","poisson",1.5,0,0.08,0,6,0,[1.5,2.5,3.5]],"uel":["ยูฟ่า ยูโรปาลีก","soccer","poisson",1.4,0,0.08,0,6,0,[1.5,2.5,3.5]],"nations":["ยูฟ่า เนชั่นส์ลีก","soccer","poisson",1.3,0,0.08,0,6,0,[1.5,2.5,3.5]],"mls":["MLS สหรัฐฯ","soccer","poisson",1.5,0,0.1,0,6,0,[1.5,2.5,3.5]],"jleague":["เจลีก ญี่ปุ่น","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5]],"thaileague":["ไทยลีก 1","soccer","poisson",1.4,0,0.1,0,6,0,[1.5,2.5,3.5]],"mlb":["MLB","baseball","negbin",4.45,0,0.02,3.8,8,0,[7.5,8.5,9.5]],"ncaabase":["NCAA เบสบอล","baseball","negbin",6.5,0,0.03,3,6,0,[10.5,12.5,14.5]],"nfl":["NFL","football","normal",22.5,13.5,0.025,0,3,3,[]],"ncaaf":["NCAA อเมริกันฟุตบอล","football","normal",28,16.5,0.025,0,3,3,[]]};
+  const LEAGUES = {"nba":["NBA","basketball","normal",114.5,18,0.012,0,4,5,[]],"wnba":["WNBA","basketball","normal",82,15,0.012,0,4,5,[]],"euroleague":["ยูโรลีก","basketball","normal",86.5,15,0.018,0,4,5,[]],"eurocup":["ยูโรคัพ","basketball","normal",83.5,15.5,0.018,0,4,5,[]],"ncaab":["NCAA บาสชาย","basketball","normal",72.5,15.5,0.02,0,4,5,[]],"ncaaw":["NCAA บาสหญิง","basketball","normal",66,15,0.02,0,4,5,[]],"epl":["พรีเมียร์ลีก อังกฤษ","soccer","poisson",1.42,0,0.1,0,6,0,[1.5,2.5,3.5]],"championship":["แชมเปียนชิพ อังกฤษ","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5]],"laliga":["ลาลีกา สเปน","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5]],"seriea":["เซเรียอา อิตาลี","soccer","poisson",1.35,0,0.1,0,6,0,[1.5,2.5,3.5]],"bundesliga":["บุนเดสลีกา เยอรมนี","soccer","poisson",1.55,0,0.1,0,6,0,[1.5,2.5,3.5]],"ligue1":["ลีกเอิง ฝรั่งเศส","soccer","poisson",1.4,0,0.1,0,6,0,[1.5,2.5,3.5]],"eredivisie":["เอเรอดิวิซี เนเธอร์แลนด์","soccer","poisson",1.55,0,0.1,0,6,0,[1.5,2.5,3.5]],"ucl":["ยูฟ่า แชมเปียนส์ลีก","soccer","poisson",1.5,0,0.08,0,6,0,[1.5,2.5,3.5]],"uel":["ยูฟ่า ยูโรปาลีก","soccer","poisson",1.4,0,0.08,0,6,0,[1.5,2.5,3.5]],"nations":["ยูฟ่า เนชั่นส์ลีก","soccer","poisson",1.3,0,0.08,0,6,0,[1.5,2.5,3.5]],"mls":["MLS สหรัฐฯ","soccer","poisson",1.5,0,0.1,0,6,0,[1.5,2.5,3.5]],"jleague":["เจลีก ญี่ปุ่น","soccer","poisson",1.3,0,0.1,0,6,0,[1.5,2.5,3.5]],"thaileague":["ไทยลีก 1","soccer","poisson",1.4,0,0.1,0,6,0,[1.5,2.5,3.5]],"mlb":["MLB","baseball","negbin",4.45,0,0.02,3.8,8,0,[7.5,8.5,9.5]],"ncaabase":["NCAA เบสบอล","baseball","negbin",6.5,0,0.03,3,6,0,[10.5,12.5,14.5]],"nfl":["NFL","football","normal",22.5,13.5,0.025,0,3,3,[]],"ncaaf":["NCAA อเมริกันฟุตบอล","football","normal",28,16.5,0.025,0,3,3,[]]};
   const LG = k => { const a = LEAGUES[k]; return a && { key: k, name: a[0], sport: a[1], model: a[2], avg: a[3], sd: a[4], home: a[5], disp: a[6], prior: a[7], step: a[8], lines: a[9] }; };
   const SPORTS = [
     { key: "all", label: "ทั้งหมด" },
@@ -323,6 +323,41 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
     return { over, under: 1 - over, push: 0 };
   }
   const decimal = o => o >= 100 ? 1 + o / 100 : o <= -100 ? 1 + 100 / Math.abs(o) : 2;
+  function invPhi(p) {  // Acklam
+    const a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239];
+    const b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
+    const c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+    const d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+    p = Math.min(Math.max(p, 1e-9), 1 - 1e-9);
+    const pl = 0.02425;
+    if (p < pl) { const q = Math.sqrt(-2 * Math.log(p)); return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+    if (p > 1 - pl) { const q = Math.sqrt(-2 * Math.log(1 - p)); return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+    const q = p - 0.5, r = q * q;
+    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+  }
+  // การกระจายของสกอร์รวมจากค่าเฉลี่ยรวม (ปัวซองรวมกันยังเป็นปัวซอง; ทวินามลบใช้ค่าประมาณ r รวม = 2r)
+  function totalDist(lg, mu) {
+    return lg.model === "poisson" ? makeDist(k => poisson(k, mu), 25) : makeDist(k => negbin(k, mu, lg.disp * 2), 60);
+  }
+  const MODEL_WEIGHT = 0.4;
+  // ผสมโมเดลกับไลน์+ราคาที่ผู้ใช้กรอก (ใช้เมื่อนัดนั้นไม่มีราคาเจ้ามือในระบบ)
+  function anchored(m, line, oo, uo) {
+    const io = 1 / decimal(oo), iu = 1 / decimal(uo), pnv = io / (io + iu);
+    const lg = LG(m.league);
+    let mt;
+    if (m.sd) mt = line + m.sd * invPhi(pnv);
+    else {
+      let lo = 0.05, hi = Math.max(3 * line, m.total) + 10;
+      for (let i = 0; i < 50; i++) {
+        const mid = (lo + hi) / 2, p = lineProbs({ dist: totalDist(lg, mid) }, line);
+        const cond = p.push < 1 ? p.over / (1 - p.push) : 0.5;
+        if (cond < pnv) lo = mid; else hi = mid;
+      }
+      mt = (lo + hi) / 2;
+    }
+    const total = MODEL_WEIGHT * m.total + (1 - MODEL_WEIGHT) * mt;
+    return { ...m, rawTotal: m.total, marketTotal: mt, total, dist: m.sd ? null : totalDist(lg, total), isMarketLine: true };
+  }
   function evalLine(m, line, oo, uo) {
     const p = lineProbs(m, line);
     const cond = x => p.push < 1 ? x / (1 - p.push) : 0;
@@ -391,6 +426,7 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
           <label>ต่ำ <input type="number" inputmode="numeric" data-f="uo" id="uo-${esc(id)}" value="${Math.round(cfg.uo)}"></label>
         </span>
       </div>
+      ${m.market ? "" : `<label class="toggle"><input type="checkbox" data-f="anchor" id="anchor-${esc(id)}"${cfg.anchor === false ? "" : " checked"}> ไลน์นี้มาจากเจ้ามือ (ผสมโมเดล 40% กับไลน์ 60%)</label>`}
       <div class="quick">${quickLines(m).map(x => `<button type="button" data-line="${x.v}" class="${x.mk ? "mk" : ""}">${fmtLine(x.v)}${x.mk ? " · เจ้ามือ" : ""}</button>`).join("")}</div>
       <div data-out></div>
     </div>`;
@@ -410,8 +446,12 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
   }
 
   function lineOutHTML(m, cfg) {
-    const r = evalLine({ ...m, isMarketLine: m.market && cfg.line === m.market.line }, cfg.line, cfg.oo, cfg.uo);
+    const useAnchor = !m.market && cfg.anchor !== false;
+    const mm = useAnchor ? anchored(m, cfg.line, cfg.oo, cfg.uo) : { ...m, isMarketLine: m.market && cfg.line === m.market.line };
+    const r = evalLine(mm, cfg.line, cfg.oo, cfg.uo);
     const unit = UNIT[m.sport] || "แต้ม";
+    const nd = m.sport === "soccer" || m.sport === "baseball" ? 2 : 1;
+    const anchorNote = useAnchor ? `<div class="src">โมเดลล้วน ${fmt(mm.rawTotal, nd)} · ไลน์และราคาที่กรอกบอก ${fmt(mm.marketTotal, nd)} → ใช้ ${fmt(mm.total, nd)} ${unit}</div>` : "";
     const o = Math.max(r.over, 0), p = Math.max(r.push, 0), u = Math.max(r.under, 0);
     const bar = `<div class="bar" role="img" aria-label="สูง ${pct(o, 1)} ต่ำ ${pct(u, 1)}">
         <div class="o" style="flex-basis:${o * 100}%">สูง ${pct(o)}</div>
@@ -428,7 +468,7 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
     } else {
       v = `<div class="verdict"><b>ผ่าน</b><small>ไม่มีความได้เปรียบพอที่ไลน์ ${fmtLine(cfg.line)} ${unit} (ต้องได้เปรียบอย่างน้อย 3%)</small></div>`;
     }
-    return bar + v;
+    return bar + v + anchorNote;
   }
 
   function projHTML(m, homeName, awayName, ex) {
@@ -505,6 +545,7 @@ table.form td:first-child { font-family: var(--font-body); font-weight: 600; }
       if (e.target === lineIn) { const v = parseFloat(lineIn.value); if (isFinite(v) && v >= 0) cfg.line = v; }
       if (e.target === ooIn) cfg.oo = readOdds(ooIn, DEFAULT_ODDS);
       if (e.target === uoIn) cfg.uo = readOdds(uoIn, DEFAULT_ODDS);
+      if (e.target.dataset.f === "anchor") cfg.anchor = e.target.checked;
       draw();
     });
     draw();

@@ -221,7 +221,10 @@ class ESPNClient:
     # -- low level --
     def get_json(self, path: str, params: dict | None = None, ttl: int = 600) -> dict:
         qs = urllib.parse.urlencode({k: v for k, v in (params or {}).items() if v is not None})
-        url = f"{BASE_URL}/{path}" + (f"?{qs}" if qs else "")
+        return self.fetch_url(f"{BASE_URL}/{path}" + (f"?{qs}" if qs else ""), ttl)
+
+    def fetch_url(self, url: str, ttl: int = 600) -> dict:
+        """GET JSON พร้อมแคชในหน่วยความจำและบนดิสก์"""
         if url in self._mem:
             return self._mem[url]
         cache_file = self.cache_dir / (hashlib.sha1(url.encode()).hexdigest() + ".json")
@@ -265,7 +268,19 @@ class ESPNClient:
         return data
 
     # -- high level --
+    def _source(self, league: League):
+        """ลีกที่ไม่ได้มาจาก ESPN ส่งต่อให้แหล่งข้อมูลของลีกนั้น"""
+        if league.provider == "euroleague":
+            if not hasattr(self, "_euroleague"):
+                from .euroleague import EuroLeagueSource
+                self._euroleague = EuroLeagueSource(self)
+            return self._euroleague
+        return None
+
     def scoreboard(self, league: League, day: date | None = None, days: int = 1) -> list[Match]:
+        src = self._source(league)
+        if src is not None:
+            return src.scoreboard(league, day, days)
         path = f"{league.sport}/{league.slug}/scoreboard"
         params = dict(league.scoreboard_params)
         if day is None:
@@ -294,6 +309,9 @@ class ESPNClient:
                    want: int = 10) -> list[GameResult]:
         """ผลการแข่งขันล่าสุดของทีม (ใหม่ -> เก่า) เฉพาะเกมที่จบก่อน `before`
         ถ้าฤดูกาลนี้มีไม่พอ จะดึงฤดูกาลก่อนหน้ามาเติม"""
+        src = self._source(league)
+        if src is not None:
+            return src.team_games(league, team_id, before, want)
         path = f"{league.sport}/{league.history_slug or league.slug}/teams/{team_id}/schedule"
         data = self.get_json(path, ttl=3600)
         games = parse_team_schedule(data, team_id)

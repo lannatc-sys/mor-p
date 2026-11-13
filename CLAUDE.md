@@ -3,7 +3,11 @@
 Python package `sports_total` (stdlib only) + a mobile web page `web/index.html` published as a
 claude.ai artifact: https://claude.ai/artifact/CaNq5YNoTF9QCZRRgTYHnx
 
-Data source: ESPN public API `site.api.espn.com` (allowed in the "mor-p" cloud environment).
+Data sources (both allowed in the "mor-p" cloud environment):
+- ESPN public API `site.api.espn.com` — everything except EuroLeague/EuroCup. Soccer scoreboards
+  reject date ranges (fetched day by day); cups/national teams use `soccer/all` for team history.
+- EuroLeague official API `api-live.euroleague.net/v2/competitions/{E|U}/seasons/{E|U}{year}/games`
+  (`sports_total/euroleague.py`) — no bookmaker odds.
 
 ## Refresh the web page ("อัปเดตป้ายสกอร์รวม")
 1. `python -m sports_total export --out-dir <scratchpad>/web_data` (≈3 min; one JSON per league).
