@@ -42,6 +42,7 @@ class League:
     line_step: float = 0.0   # ระยะห่างของไลน์ที่แสดงเพิ่มเติม
     default_lines: tuple[float, ...] = ()
     scoreboard_params: dict = field(default_factory=dict)
+    history_slug: str = ""   # ดึงผลย้อนหลังของทีมจากลีกนี้แทน เช่น "all" = ทุกรายการ
 
     @property
     def unit_th(self) -> str:
@@ -57,9 +58,9 @@ def _bb(key, slug, name, avg, sd, home=0.012, step=5.0, params=None):
                   line_step=step, prior_games=4.0, scoreboard_params=params or {})
 
 
-def _fb(key, slug, name, avg=1.38, home=0.10):
+def _fb(key, slug, name, avg=1.38, home=0.10, history=""):
     return League(key, SOCCER, slug, name, POISSON, avg, home_adv=home, prior_games=6.0,
-                  default_lines=(1.5, 2.5, 3.5))
+                  default_lines=(1.5, 2.5, 3.5), history_slug=history)
 
 
 def _af(key, slug, name, avg, sd, params=None):
@@ -71,6 +72,8 @@ LEAGUES: dict[str, League] = {lg.key: lg for lg in [
     # บาสเกตบอล
     _bb("nba", "nba", "NBA", 114.5, 18.0),
     _bb("wnba", "wnba", "WNBA", 82.0, 15.0),
+    # ESPN ไม่มีข้อมูลนัดของยูโรลีก ใช้ได้กับคำสั่ง manual / แท็บคำนวณเองเท่านั้น
+    _bb("euroleague", "euroleague", "ยูโรลีก (คำนวณเองเท่านั้น)", 82.0, 15.0, home=0.02),
     _bb("ncaab", "mens-college-basketball", "NCAA บาสชาย", 72.5, 15.5, home=0.02,
         params={"groups": "50", "limit": "400"}),
     _bb("ncaaw", "womens-college-basketball", "NCAA บาสหญิง", 66.0, 15.0, home=0.02,
@@ -83,8 +86,10 @@ LEAGUES: dict[str, League] = {lg.key: lg for lg in [
     _fb("bundesliga", "ger.1", "บุนเดสลีกา เยอรมนี", 1.55),
     _fb("ligue1", "fra.1", "ลีกเอิง ฝรั่งเศส", 1.40),
     _fb("eredivisie", "ned.1", "เอเรอดิวิซี เนเธอร์แลนด์", 1.55),
-    _fb("ucl", "uefa.champions", "ยูฟ่า แชมเปียนส์ลีก", 1.50, home=0.08),
-    _fb("uel", "uefa.europa", "ยูฟ่า ยูโรปาลีก", 1.40, home=0.08),
+    # รายการถ้วย/ทีมชาติแข่งไม่กี่นัด จึงใช้ผลจากทุกรายการ (soccer/all)
+    _fb("ucl", "uefa.champions", "ยูฟ่า แชมเปียนส์ลีก", 1.50, home=0.08, history="all"),
+    _fb("uel", "uefa.europa", "ยูฟ่า ยูโรปาลีก", 1.40, home=0.08, history="all"),
+    _fb("nations", "uefa.nations", "ยูฟ่า เนชั่นส์ลีก", 1.30, home=0.08, history="all"),
     _fb("mls", "usa.1", "MLS สหรัฐฯ", 1.50),
     _fb("jleague", "jpn.1", "เจลีก ญี่ปุ่น", 1.30),
     _fb("thaileague", "tha.1", "ไทยลีก 1", 1.40),

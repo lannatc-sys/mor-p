@@ -4,8 +4,8 @@
 
 | กีฬา | ลีก (ชื่อย่อที่ใช้ในคำสั่ง) | โมเดลการกระจายของสกอร์ |
 |---|---|---|
-| บาสเกตบอล | `nba` `wnba` `ncaab` `ncaaw` | แจกแจงปกติ |
-| ฟุตบอล | `epl` `laliga` `seriea` `bundesliga` `ligue1` `ucl` `uel` `thaileague` `mls` `jleague` `eredivisie` `championship` หรือ `soccer:<รหัส ESPN>` | ปัวซองต่อทีม |
+| บาสเกตบอล | `nba` `wnba` `ncaab` `ncaaw` (`euroleague` เฉพาะคำนวณเอง — ESPN ไม่มีข้อมูลนัด) | แจกแจงปกติ |
+| ฟุตบอล | `epl` `laliga` `seriea` `bundesliga` `ligue1` `ucl` `uel` `nations` `thaileague` `mls` `jleague` `eredivisie` `championship` หรือ `soccer:<รหัส ESPN>` | ปัวซองต่อทีม |
 | เบสบอล | `mlb` `ncaabase` | ทวินามลบต่อทีม |
 | อเมริกันฟุตบอล | `nfl` `ncaaf` | แจกแจงปกติ |
 

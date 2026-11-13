@@ -22,7 +22,7 @@ US_EAST = timezone(timedelta(hours=-5))
 DEFAULT_PLAN = {
     "nba": 2, "nfl": 7, "ncaaf": 7, "mlb": 2,
     "epl": 10, "laliga": 10, "seriea": 10, "bundesliga": 10, "ligue1": 10,
-    "ucl": 14, "uel": 14, "thaileague": 10, "jleague": 10,
+    "ucl": 14, "uel": 14, "nations": 7, "thaileague": 10, "jleague": 10,
 }
 
 

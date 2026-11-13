@@ -294,7 +294,7 @@ class ESPNClient:
                    want: int = 10) -> list[GameResult]:
         """ผลการแข่งขันล่าสุดของทีม (ใหม่ -> เก่า) เฉพาะเกมที่จบก่อน `before`
         ถ้าฤดูกาลนี้มีไม่พอ จะดึงฤดูกาลก่อนหน้ามาเติม"""
-        path = f"{league.sport}/{league.slug}/teams/{team_id}/schedule"
+        path = f"{league.sport}/{league.history_slug or league.slug}/teams/{team_id}/schedule"
         data = self.get_json(path, ttl=3600)
         games = parse_team_schedule(data, team_id)
         games = [g for g in games if before is None or g.date < before]
