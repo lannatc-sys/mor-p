@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sports-total"
+version = "1.0.0"
+description = "วิเคราะห์สกอร์รวม (Over/Under) บาสเกตบอล ฟุตบอล เบสบอล อเมริกันฟุตบอล จากข้อมูลก่อนเริ่มเกม"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+sports-total = "sports_total.cli:main"
+
+[tool.setuptools]
+packages = ["sports_total"]
